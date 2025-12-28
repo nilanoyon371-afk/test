@@ -134,6 +134,9 @@ async def scrape(url: str) -> ScrapeResponse:
         data = await _scrape_dispatch(str(req.url), req.url.host or "")
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+    except xhamster.XhamsterBlockedError as e:
+        logger.exception("/scrape blocked by xhamster for url=%s", url)
+        raise HTTPException(status_code=403, detail=str(e)) from e
     except (httpx.ConnectTimeout, httpx.ConnectError, httpx.ReadTimeout) as e:
         logger.exception("/scrape network error for url=%s", url)
         raise HTTPException(
@@ -160,6 +163,9 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[Lis
         items = await _list_dispatch(str(req.base_url), req.base_url.host or "", page, limit)
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+    except xhamster.XhamsterBlockedError as e:
+        logger.exception("/list blocked by xhamster for base_url=%s", base_url)
+        raise HTTPException(status_code=403, detail=str(e)) from e
     except (httpx.ConnectTimeout, httpx.ConnectError, httpx.ReadTimeout) as e:
         logger.exception("/list network error for base_url=%s page=%s limit=%s", base_url, page, limit)
         raise HTTPException(
@@ -229,6 +235,9 @@ async def scrape_post(body: ScrapeRequest) -> ScrapeResponse:
         data = await _scrape_dispatch(str(body.url), body.url.host or "")
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+    except xhamster.XhamsterBlockedError as e:
+        logger.exception("/scrape (POST) blocked by xhamster for url=%s", str(body.url))
+        raise HTTPException(status_code=403, detail=str(e)) from e
     except (httpx.ConnectTimeout, httpx.ConnectError, httpx.ReadTimeout) as e:
         logger.exception("/scrape (POST) network error for url=%s", str(body.url))
         raise HTTPException(

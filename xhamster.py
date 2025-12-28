@@ -3,11 +3,31 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 from typing import Any, Optional
 
 import httpx
 from bs4 import BeautifulSoup
+
+
+class XhamsterBlockedError(RuntimeError):
+    pass
+
+
+def _looks_blocked_html(html: str) -> bool:
+    lower = html.lower()
+    return any(
+        s in lower
+        for s in (
+            "captcha",
+            "access denied",
+            "forbidden",
+            "cloudflare",
+            "verify you are human",
+            "enable javascript",
+        )
+    )
 
 
 def can_handle(host: str) -> bool:
@@ -63,6 +83,13 @@ def _find_duration_like_text(node: Any) -> Optional[str]:
 
 
 async def fetch_html(url: str) -> str:
+    proxy_url = (
+        os.environ.get("XHAMSTER_PROXY")
+        or os.environ.get("SCRAPER_PROXY")
+        or os.environ.get("HTTPS_PROXY")
+        or os.environ.get("HTTP_PROXY")
+    )
+    cookie_header = os.environ.get("XHAMSTER_COOKIE")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -72,19 +99,28 @@ async def fetch_html(url: str) -> str:
         "Pragma": "no-cache",
         "Upgrade-Insecure-Requests": "1",
     }
+    if cookie_header and cookie_header.strip():
+        headers["Cookie"] = cookie_header.strip()
 
     async with httpx.AsyncClient(
         follow_redirects=True,
         timeout=httpx.Timeout(45.0, connect=25.0),
         headers=headers,
         transport=httpx.AsyncHTTPTransport(retries=2),
+        proxy=proxy_url,
+        trust_env=True,
     ) as client:
         last_exc: Exception | None = None
         for attempt in range(3):
             try:
                 resp = await client.get(url)
                 resp.raise_for_status()
-                return resp.text
+                text = resp.text
+                if _looks_blocked_html(text):
+                    raise XhamsterBlockedError(
+                        "xhamster appears blocked (captcha/anti-bot). Try VPN/proxy or different network."
+                    )
+                return text
             except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as e:
                 last_exc = e
                 await asyncio.sleep(0.6 * (2**attempt))
@@ -377,20 +413,8 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     # If Xhamster returns a bot/blocked page, it often contains no /videos/ links.
     # Fail loudly so the frontend shows an actionable error instead of a blank list.
     if page <= 1:
-        lower = html.lower()
-        looks_blocked = any(
-            s in lower
-            for s in (
-                "captcha",
-                "access denied",
-                "forbidden",
-                "cloudflare",
-                "verify you are human",
-                "enable javascript",
-            )
-        )
-        if looks_blocked:
-            raise RuntimeError("xhamster appears blocked (captcha/anti-bot). Try VPN or different network.")
+        if _looks_blocked_html(html):
+            raise XhamsterBlockedError("xhamster appears blocked (captcha/anti-bot). Try VPN or different network.")
 
     items: list[dict[str, Any]] = []
     seen: set[str] = set()
