@@ -17,11 +17,40 @@ def can_handle(host: str) -> bool:
 def _best_image_url(img: Any) -> Optional[str]:
     if img is None:
         return None
-    for k in ("data-src", "data-original", "data-lazy", "src"):
+    for k in (
+        "data-srcset",
+        "data-src",
+        "data-original",
+        "data-lazy",
+        "data-thumb",
+        "data-image",
+        "srcset",
+        "src",
+    ):
         v = img.get(k)
-        if v and str(v).strip():
-            return str(v).strip()
+        if not v or not str(v).strip():
+            continue
+        v = str(v).strip()
+        # srcset-like: "url 1x, url2 2x" or "url 320w"
+        if "," in v or " " in v:
+            first = v.split(",", 1)[0].strip()
+            first = first.split(" ", 1)[0].strip()
+            if first:
+                return first
+        return v
     return None
+
+
+def _background_image_url(node: Any) -> Optional[str]:
+    if node is None:
+        return None
+    style = node.get("style") if hasattr(node, "get") else None
+    if not style or not str(style).strip():
+        return None
+    m = re.search(r"url\((?:'|\")?(.*?)(?:'|\")?\)", str(style))
+    if not m:
+        return None
+    return m.group(1).strip() or None
 
 
 def _find_duration_like_text(node: Any) -> Optional[str]:
@@ -303,8 +332,17 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
         effective_limit = limit
 
     candidates: list[str] = []
+    candidates.append(root)
+    # Xhamster often has listings under /newest/ and /videos
     if page <= 1:
-        candidates.append(root)
+        candidates.extend(
+            [
+                f"{root}newest/",
+                f"{root}newest/1/",
+                f"{root}videos",
+                f"{root}videos?page=1",
+            ]
+        )
     else:
         candidates.extend(
             [
@@ -336,6 +374,24 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     soup = BeautifulSoup(html, "lxml")
     base_uri = httpx.URL(used)
 
+    # If Xhamster returns a bot/blocked page, it often contains no /videos/ links.
+    # Fail loudly so the frontend shows an actionable error instead of a blank list.
+    if page <= 1:
+        lower = html.lower()
+        looks_blocked = any(
+            s in lower
+            for s in (
+                "captcha",
+                "access denied",
+                "forbidden",
+                "cloudflare",
+                "verify you are human",
+                "enable javascript",
+            )
+        )
+        if looks_blocked:
+            raise RuntimeError("xhamster appears blocked (captcha/anti-bot). Try VPN or different network.")
+
     items: list[dict[str, Any]] = []
     seen: set[str] = set()
 
@@ -357,6 +413,13 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
 
         img = a.find("img")
         thumb = _best_image_url(img)
+        if not thumb:
+            source = a.find("source")
+            if source is not None:
+                thumb = _best_image_url(source)
+        if not thumb:
+            # Some cards use CSS background-image
+            thumb = _background_image_url(a) or _background_image_url(a.find("div"))
 
         # Try to find a specific title element first
         title_el = a.find(class_=re.compile(r"video-thumb-info__name"))
@@ -414,6 +477,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
 
         if effective_limit is not None and len(items) >= effective_limit:
             break
+
+    if page <= 1 and not items:
+        raise RuntimeError(
+            "xhamster list parsing returned 0 items (site layout changed or blocked)."
+        )
 
     return items
 
