@@ -197,9 +197,10 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[Lis
     try:
         items = await _list_dispatch(str(req.base_url), req.base_url.host or "", page, limit)
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+        raise HTTPException(status_code=e.response.status_code, detail=f"Upstream returned error: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail="Failed to fetch url") from e
+        print(f"Error in list_videos: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to fetch url: {str(e)}") from e
 
     return [ListItem(**it) for it in items]
 
@@ -239,9 +240,10 @@ async def crawl_videos(
             max_items,
         )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+        raise HTTPException(status_code=e.response.status_code, detail=f"Upstream returned error: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail="Failed to fetch url") from e
+        print(f"Error in crawl_videos: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to fetch url: {str(e)}") from e
 
     return [ListItem(**it) for it in items]
 
@@ -251,7 +253,8 @@ async def scrape_post(body: ScrapeRequest) -> ScrapeResponse:
     try:
         data = await _scrape_dispatch(str(body.url), body.url.host or "")
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
+        raise HTTPException(status_code=e.response.status_code, detail=f"Upstream returned error: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail="Failed to fetch url") from e
+        print(f"Error in scrape_post: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to fetch url: {str(e)}") from e
     return ScrapeResponse(**data)
