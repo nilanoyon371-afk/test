@@ -15,8 +15,38 @@ import masa49
 import xhamster
 import xnxx
 import xvideos
+from contextlib import asynccontextmanager
+from cache import cache_manager
 
-# ... (rest of the file until endpoints)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await cache_manager.connect()
+    yield
+    await cache_manager.disconnect()
+
+# Create FastAPI app
+app = FastAPI(title="OSINT Scraper API", lifespan=lifespan)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/categories")
+async def get_categories() -> list[str]:
+    """Return a list of video categories for filtering"""
+    return [
+        "Amateur", "Anal", "Asian", "Ass", "Babysitters", "BBW", "Big Tits", "Blond", 
+        "Blowjob", "Brunette", "Celebrity", "Creampie", "Cumshots", "Ebony", "Euro", 
+        "Hardcore", "Hentai", "Indian", "Interracial", "Japanese", "Latina", "Lesbian", 
+        "Mature", "Milf", "Mom", "Old/Young", "Public", "Redhead", "Small Tits", 
+        "Squirt", "Teen", "Threesome", "Toys"
+    ]
+
 
 async def _crawl_dispatch(
     base_url: str,
