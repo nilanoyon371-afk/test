@@ -16,6 +16,8 @@ import xhamster
 import xnxx
 import xvideos
 from contextlib import asynccontextmanager
+from cache import cache_manager
+from cache import cache_manager
 
 # ------------------------------------------------------------------------------
 # Pydantic Models
