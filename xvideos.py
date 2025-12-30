@@ -134,7 +134,19 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     og_image = _meta(soup, prop="og:image")
     meta_desc = _meta(soup, name="description")
 
-    title = _first_non_empty(og_title, _text(soup.find("title")))
+    # Strategy 1: Look for setVideoTitle('...')
+    # This is the most accurate raw title from the player config
+    m_title = re.search(r"setVideoTitle\s*\(\s*['\"]([^'\"]+)['\"]\s*\)", html)
+    js_title = m_title.group(1) if m_title else None
+
+    title = _first_non_empty(js_title, og_title, _text(soup.find("title")))
+    
+    # distinct suffix removal
+    if title:
+        for suffix in (" - XVIDEOS.COM", " - XVIDEOS", " XVIDEOS.COM"):
+            if title.upper().endswith(suffix):
+                title = title[:-len(suffix)]
+
     description = _first_non_empty(og_desc, meta_desc)
     thumbnail = _first_non_empty(og_image)
 
