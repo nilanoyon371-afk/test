@@ -1,108 +1,22 @@
 from __future__ import annotations
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, field_validator
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db
+from models import Job
+from background import job_manager
 
 import masa49
 import xhamster
 import xnxx
 import xvideos
 
-# Create FastAPI app
-app = FastAPI(title="Scraper API - Simple Version")
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-class ScrapeRequest(BaseModel):
-    url: HttpUrl
-
-    @field_validator("url")
-    @classmethod
-    def validate_domain(cls, v: HttpUrl) -> HttpUrl:
-        host = (v.host or "").lower()
-        if (
-            host.endswith("xhamster.com")
-            or host.endswith("masa49.org")
-            or host.endswith("xnxx.com")
-            or host.endswith("xvideos.com")
-        ):
-            return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com and xvideos.com URLs are allowed")
-
-
-class ScrapeResponse(BaseModel):
-    url: HttpUrl
-    title: str | None = None
-    description: str | None = None
-    thumbnail_url: str | None = None
-    duration: str | None = None
-    views: str | None = None
-    uploader_name: str | None = None
-    category: str | None = None
-    tags: list[str] = []
-
-
-class ListItem(BaseModel):
-    url: HttpUrl
-    title: str | None = None
-    thumbnail_url: str | None = None
-    duration: str | None = None
-    views: str | None = None
-    uploader_name: str | None = None
-    category: str | None = None
-    tags: list[str] = []
-
-
-class ListRequest(BaseModel):
-    base_url: HttpUrl
-
-    @field_validator("base_url")
-    @classmethod
-    def validate_domain(cls, v: HttpUrl) -> HttpUrl:
-        host = (v.host or "").lower()
-        if (
-            host.endswith("xhamster.com")
-            or host.endswith("masa49.org")
-            or host.endswith("xnxx.com")
-            or host.endswith("xvideos.com")
-        ):
-            return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com and xvideos.com base_url are allowed")
-
-
-async def _scrape_dispatch(url: str, host: str) -> dict[str, object]:
-    if xhamster.can_handle(host):
-        return await xhamster.scrape(url)
-    if masa49.can_handle(host):
-        return await masa49.scrape(url)
-    if xnxx.can_handle(host):
-        return await xnxx.scrape(url)
-    if xvideos.can_handle(host):
-        return await xvideos.scrape(url)
-    raise HTTPException(status_code=400, detail="Unsupported host")
-
-
-async def _list_dispatch(base_url: str, host: str, page: int, limit: int) -> list[dict[str, object]]:
-    if xhamster.can_handle(host):
-        return await xhamster.list_videos(base_url=base_url, page=page, limit=limit)
-    if masa49.can_handle(host):
-        return await masa49.list_videos(base_url=base_url, page=page, limit=limit)
-    if xnxx.can_handle(host):
-        return await xnxx.list_videos(base_url=base_url, page=page, limit=limit)
-    if xvideos.can_handle(host):
-        return await xvideos.list_videos(base_url=base_url, page=page, limit=limit)
-    raise HTTPException(status_code=400, detail="Unsupported host")
-
+# ... (rest of the file until endpoints)
 
 async def _crawl_dispatch(
     base_url: str,
@@ -121,6 +35,56 @@ async def _crawl_dispatch(
             max_items=max_items,
         )
     raise HTTPException(status_code=400, detail="Unsupported host")
+
+
+@app.post("/jobs/crawl", status_code=202)
+async def start_crawl_job(
+    req: ListRequest,
+    background_tasks: BackgroundTasks,
+    max_pages: int = 5,
+    max_items: int = 100
+):
+    """Start a background crawling job"""
+    params = {
+        "base_url": str(req.base_url),
+        "max_pages": max_pages,
+        "max_items": max_items
+    }
+    
+    # Create job record
+    job_id = await job_manager.create_job(user_id=None, job_type="crawl", params=params)
+    
+    # Schedule background task
+    background_tasks.add_task(job_manager.run_crawl_task, job_id)
+    
+    return {
+        "job_id": job_id,
+        "status": "pending",
+        "message": "Crawl job started in background"
+    }
+
+
+@app.get("/jobs/{job_id}")
+async def get_job_status(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Get status of a background job"""
+    query = select(Job).where(Job.job_id == job_id)
+    result = await db.execute(query)
+    job = result.scalar_one_or_none()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    return {
+        "job_id": job.job_id,
+        "type": job.job_type,
+        "status": job.status,
+        "progress": job.progress,
+        "items_processed": job.items_processed,
+        "created_at": job.created_at,
+        "completed_at": job.completed_at,
+        "error": job.error,
+        "result": job.result
+    }
 
 
 @app.get("/health")
