@@ -9,6 +9,8 @@ import masa49
 import xhamster
 import xnxx
 import xvideos
+import json
+import os
 
 # Create FastAPI app
 app = FastAPI(title="Scraper API - Simple Version")
@@ -61,6 +63,12 @@ class ListItem(BaseModel):
     uploader_name: str | None = None
     category: str | None = None
     tags: list[str] = []
+
+
+class CategoryItem(BaseModel):
+    name: str
+    url: str
+    video_count: int
 
 
 class ListRequest(BaseModel):
@@ -211,3 +219,18 @@ async def scrape_post(body: ScrapeRequest) -> ScrapeResponse:
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to fetch url") from e
     return ScrapeResponse(**data)
+
+
+@app.get("/xnxx/categories", response_model=list[CategoryItem])
+async def get_xnxx_categories() -> list[CategoryItem]:
+    """Get list of XNXX categories"""
+    try:
+        # Load categories from JSON file
+        json_path = os.path.join(os.path.dirname(__file__), "xnxx_categories.json")
+        with open(json_path, 'r', encoding='utf-8') as f:
+            categories = json.load(f)
+        return [CategoryItem(**cat) for cat in categories]
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Categories file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")

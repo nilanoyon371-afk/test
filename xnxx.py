@@ -237,28 +237,33 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     # XNXX commonly uses ?p=0-based page index on some listings.
     candidates: list[str] = []
     if page <= 1:
-        # If it looks like the homepage, target /best directly because homepage is categories
+        # If it looks like the homepage, use a popular category with pagination instead
+        # Using /search/indian because it's popular and supports pagination
         if "xnxx.com" in root and len(root.split("/")) <= 4: 
-             candidates.append(f"{root}best")
+             candidates.append(f"{root}search/indian")
         else:
              candidates.append(root)
     else:
-        # For pagination, XNXX uses 0-based indexing
-        # Try multiple patterns for robustness
-        if "xnxx.com" in root and len(root.split("/")) <= 4:
-            # Homepage pagination - use /best endpoint
+        # For pagination on search pages, XNXX often uses 0-indexed pagination
+        # Check if we're on a search category page
+        if "xnxx.com/search/" in root:
+            # Category pagination typically uses /{page-1}
             candidates.extend([
-                f"{root}best/{page - 1}/",  # 0-indexed pagination
-                f"{root}best?page={page}",
+                f"{root}/{page - 1}",
+                f"{root}?p={page - 1}",
+            ])
+        elif "xnxx.com" in root and len(root.split("/")) <= 4:
+            # Homepage-like URLs - default to indian category with pagination
+            candidates.extend([
+                f"{root}search/indian/{page - 1}",
             ])
         else:
-            # Specific category/section pagination
+            # Generic pagination patterns
             candidates.extend([
-                f"{root}{page - 1}/",       # 0-indexed direct append
+                f"{root}{page - 1}/",       #  0-indexed direct append
                 f"{root}?p={page - 1}",
                 f"{root}?page={page}",
             ])
-
 
     html = ""
     used = ""
@@ -269,6 +274,8 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
             used = c
             if html and "thumb-block" in html:
                 break
+            else:
+                pass  # Try next candidate
         except Exception as e:
             last_exc = e
             continue
