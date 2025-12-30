@@ -263,44 +263,6 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         m = re.search(r"\b(\d{1,2}:\d{2}(?::\d{2})?)\b", soup.get_text(" ", strip=True))
         if m:
             duration = m.group(1)
-    
-    # Extract video URLs (HLS m3u8, MP4, etc.)
-    video_url = None
-    video_sources = []
-    
-    # Try to get from JSON-LD contentUrl
-    if video_obj:
-        content_url = video_obj.get("contentUrl")
-        if content_url:
-            video_url = content_url
-            video_sources.append({"url": content_url, "quality": "default", "type": "direct"})
-    
-    # Always try to extract from embedded JavaScript (xplayerSettings) to get all sources
-    # Look for xplayerSettings or similar video config in script tags
-    for script in soup.find_all("script"):
-        script_text = script.string or script.get_text()
-        if not script_text:
-            continue
-        
-        # Look for m3u8 URLs
-        m3u8_matches = re.findall(r'https?://[^"\s]+\.m3u8[^"\s]*', script_text)
-        if m3u8_matches:
-            for m3u8_url in m3u8_matches:
-                # Clean up the URL (remove escape characters)
-                clean_url = m3u8_url.replace('\\/', '/')
-                if not video_url:
-                    video_url = clean_url
-                video_sources.append({"url": clean_url, "quality": "hls", "type": "m3u8"})
-            # Don't break - continue looking for more sources
-        
-        # Look for MP4 URLs
-        mp4_matches = re.findall(r'https?://[^"\s]+\.mp4[^"\s]*', script_text)
-        if mp4_matches:
-            for mp4_url in mp4_matches:
-                clean_url = mp4_url.replace('\\/', '/')
-                if not video_url:
-                    video_url = clean_url
-                video_sources.append({"url": clean_url, "quality": "sd", "type": "mp4"})
 
     return {
         "url": url,
@@ -312,8 +274,6 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
-        "video_url": video_url,  # Main video URL
-        "video_sources": video_sources,  # All available sources with quality info
     }
 
 

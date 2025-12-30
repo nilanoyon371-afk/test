@@ -50,8 +50,6 @@ class ScrapeResponse(BaseModel):
     uploader_name: str | None = None
     category: str | None = None
     tags: list[str] = []
-    video_url: str | None = None  # Main video playback URL
-    video_sources: list[dict[str, str]] = []  # All available video sources
 
 
 class ListItem(BaseModel):
