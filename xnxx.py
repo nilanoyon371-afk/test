@@ -238,9 +238,9 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     candidates: list[str] = []
     if page <= 1:
         # If it looks like the homepage, use a popular category with pagination instead
-        # Using /search/indian because it's popular and supports pagination
+        # Using /search/trending because it's the primary trending content
         if "xnxx.com" in root and len(root.split("/")) <= 4: 
-             candidates.append(f"{root}search/indian")
+             candidates.append(f"{root}search/trending")
         else:
              candidates.append(root)
     else:
@@ -253,9 +253,9 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 f"{root}?p={page - 1}",
             ])
         elif "xnxx.com" in root and len(root.split("/")) <= 4:
-            # Homepage-like URLs - default to indian category with pagination
+            # Homepage-like URLs - default to trending category with pagination
             candidates.extend([
-                f"{root}search/indian/{page - 1}",
+                f"{root}search/trending/{page - 1}",
             ])
         else:
             # Generic pagination patterns
