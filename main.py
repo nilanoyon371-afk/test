@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, field_validator
 
 import masa49
@@ -9,7 +10,17 @@ import xhamster
 import xnxx
 import xvideos
 
-app = FastAPI(title="Scraper API")
+# Create FastAPI app
+app = FastAPI(title="Scraper API - Simple Version")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class ScrapeRequest(BaseModel):
@@ -67,6 +78,8 @@ class ListRequest(BaseModel):
         ):
             return v
         raise ValueError("Only xhamster.com, masa49.org, xnxx.com and xvideos.com base_url are allowed")
+
+
 async def _scrape_dispatch(url: str, host: str) -> dict[str, object]:
     if xhamster.can_handle(host):
         return await xhamster.scrape(url)

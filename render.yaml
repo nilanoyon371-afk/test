@@ -1,0 +1,22 @@
+# Render Deployment Configuration
+# This file can be used with render.yaml for infrastructure as code
+
+services:
+  - type: web
+    name: vodatube-api
+    runtime: python
+    plan: free # or starter, standard, pro
+    buildCommand: "./build.sh"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: PORT
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+    # Uncomment to use with Redis
+    # - type: redis
+    #   name: vodatube-redis
+    #   plan: free
+    #   ipAllowList: []

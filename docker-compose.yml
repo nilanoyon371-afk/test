@@ -1,0 +1,66 @@
+# Docker Compose - Multi-Service Setup
+version: '3.8'
+
+services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: scraper-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Service
+  api:
+    build: .
+    container_name: scraper-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/scraper.db
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=["*"]
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+  # Optional: PostgreSQL (uncomment if using PostgreSQL)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: scraper-postgres
+  #   environment:
+  #     POSTGRES_DB: scraper_db
+  #     POSTGRES_USER: scraper
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U scraper"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  redis_data: # postgres_data:

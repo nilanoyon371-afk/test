@@ -356,30 +356,10 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
 
         duration = _find_duration_like_text(a)
 
-        container = a
-        for tag in ("article", "li", "div"):
-            p = a.find_parent(tag)
-            if p is not None:
-                container = p
-                break
-
+        # Note: xHamster's HTML doesn't reliably separate views/uploader per video card.
+        # Use /scrape endpoint for individual video details with accurate metadata.
         uploader_name = None
-        for ua in container.select('a[href*="/users/"], a[href*="/pornstars/"], a[href*="/model/"]'):
-            t = _text(ua)
-            if t:
-                uploader_name = t
-                break
-
         views = None
-        try:
-            card_text = container.get_text(" ", strip=True)
-        except Exception:
-            card_text = ""
-        m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])?\s*(?:views|view)\b", card_text, re.IGNORECASE)
-        if m:
-            num = m.group(1).replace(" ", "").replace(",", "")
-            suf = (m.group(2) or "").upper()
-            views = f"{num}{suf}" if suf else num
 
         # If no thumbnail, skip (usually not a card)
         if not thumb:
