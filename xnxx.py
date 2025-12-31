@@ -167,6 +167,8 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     category = None
     tags: list[str] = []
 
+    views: Optional[str] = None
+
     if video_obj:
         title = _first_non_empty(title, video_obj.get("name"))
         description = _first_non_empty(description, video_obj.get("description"))
@@ -183,6 +185,28 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
             uploader = _first_non_empty(author.get("name"), author.get("alternateName"))
         elif isinstance(author, str):
             uploader = author.strip() or None
+
+        # Extract views from interactionStatistic
+        interaction = video_obj.get("interactionStatistic")
+        if interaction:
+            interactions = interaction if isinstance(interaction, list) else [interaction]
+            for i in interactions:
+                if not isinstance(i, dict):
+                    continue
+                itype = i.get("interactionType")
+                is_watch = False
+                if isinstance(itype, str):
+                    is_watch = "WatchAction" in itype
+                elif isinstance(itype, dict):
+                    t = itype.get("@type")
+                    if t and "WatchAction" in str(t):
+                         is_watch = True
+                
+                if is_watch:
+                     count = i.get("userInteractionCount")
+                     if count:
+                         views = str(count)
+                         break
 
         genre = video_obj.get("genre")
         if isinstance(genre, str):
@@ -207,10 +231,10 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     if not duration:
         duration = _find_duration_like_text(soup.get_text(" ", strip=True))
 
-    views: Optional[str] = None
-    m = re.search(r'"viewCount"\s*:\s*"?([0-9][0-9,\.]*\s*[KMB]?)"?', html, re.IGNORECASE)
-    if m:
-        views = m.group(1).replace(" ", "")
+    if not views:
+        m = re.search(r'"viewCount"\s*:\s*"?([0-9][0-9,\.]*\s*[KMB]?)"?', html, re.IGNORECASE)
+        if m:
+            views = m.group(1).replace(" ", "")
 
     return {
         "url": url,
@@ -368,8 +392,13 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
         meta_text = block.select_one(".metadata")
         if meta_text:
             raw_meta = _text(meta_text) or ""
-            # Regex for views
-            m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])?\s*(?:views|view|)\b", raw_meta, re.IGNORECASE)
+            # Regex 1: Explicit "views" keyword e.g. "100 views", "1.5M views"
+            m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])?\s*(?:views|view)\b", raw_meta, re.IGNORECASE)
+            
+            # Regex 2: Suffix only e.g. "2.4M" (common in some XNXX layouts)
+            if not m:
+                m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])\b", raw_meta, re.IGNORECASE)
+
             if m:
                 num = m.group(1).replace(" ", "").replace(",", "")
                 suf = (m.group(2) or "").upper()
