@@ -370,47 +370,16 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 # Clean up the views text (e.g., "1.2M views" -> "1.2M")
                 views = re.sub(r"\s*views?\s*$", "", views_text, flags=re.IGNORECASE).strip()
 
-        # Extract uploader name and URL
-        # Note: xHamster often doesn't include uploader info on listing pages (loaded via JS)
+        # Extract uploader name only
         uploader_name = None
-        uploader_url = None
         uploader_el = card.find(class_=re.compile(r"video-uploader__name|video-thumb-uploader__name|video-user-info__name"))
         if not uploader_el:
-            # Try finding uploader link within the card only
+             # Try finding uploader link within the card only
             uploader_link = card.find('a', href=re.compile(r"/users/|/channels/"))
             if uploader_link:
                 uploader_name = _text(uploader_link)
-                href = uploader_link.get('href')
-                if href:
-                    try:
-                        uploader_url = str(base_uri.join(href))
-                    except Exception:
-                        pass
         else:
             uploader_name = _text(uploader_el)
-            # Try to find the link associated with this element
-            parent = uploader_el.parent if hasattr(uploader_el, 'parent') else None
-            if parent and parent.name == 'a':
-                href = parent.get('href')
-                if href:
-                    try:
-                        uploader_url = str(base_uri.join(href))
-                    except Exception:
-                        pass
-
-        # Extract upload time/date
-        upload_time = None
-        date_el = card.find(class_=re.compile(r"video-thumb__date-added|entity-info-container__date|date-added"))
-        if date_el:
-            upload_time = _text(date_el)
-
-        # Extract tags (usually not available on list pages, but check anyway)
-        tags = []
-        tag_els = card.find_all('a', href=re.compile(r"/tags/"))
-        for tag_el in tag_els:
-            tag_text = _text(tag_el)
-            if tag_text and tag_text not in tags:
-                tags.append(tag_text)
 
         # If no thumbnail, skip (usually not a card)
         if not thumb:
@@ -425,10 +394,6 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 "duration": duration,
                 "views": views,
                 "uploader_name": uploader_name,
-                "uploader_url": uploader_url,
-                "upload_time": upload_time,
-                "category": None,
-                "tags": tags,
             }
         )
 
