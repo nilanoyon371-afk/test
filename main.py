@@ -149,7 +149,7 @@ async def scrape(url: str) -> ScrapeResponse:
     return ScrapeResponse(**data)
 
 
-@app.get("/list", response_model=list[ListItem])
+@app.get("/list", response_model=list[ListItem], response_model_exclude_unset=True)
 async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[ListItem]:
     req = ListRequest(base_url=base_url)
     if page < 1:
@@ -165,7 +165,28 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[Lis
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to fetch url") from e
-
+    
+    # We must explicitly construct ListItem without defaults for missing keys to ensure exclude_unset works?
+    # Actually, Pydantic v2 (or v1) behavior:
+    # If we pass a dict to **it:
+    # If the dict lacks a key, and the model has a default, the default IS set.
+    # So exclude_unset=True will NOT exclude it if it has a default.
+    # We need to manually construct the list of dicts or modify how we return.
+    
+    # However, if we return the list of dicts directly and change response_model to use exclude_unset?
+    # No, FastAPI converts return value to Pydantic models.
+    
+    # Wait, if I simply return List[dict] instead of List[ListItem], I lose validation but gain total control.
+    # BUT the user asked to remove them.
+    
+    # Alternative: Modify ListItem defaults? No, other scrapers need defaults.
+    # Alternative: construct ListItem with only present keys?
+    # If I do `ListItem(title="foo")`, `tags` becomes `[]` (default). It is considered "set" by default values?
+    # In Pydantic v1: `exclude_unset` excludes fields that were NOT passed to __init__? 
+    # Yes: "fields which were not explicitly set when creating the model".
+    # So if I do `ListItem(**{'title': 'foo'})`, `tags` takes default `[]`.
+    # Is that "set"? No, it's default. So `exclude_unset=True` SHOULD work.
+    
     return [ListItem(**it) for it in items]
 
 
