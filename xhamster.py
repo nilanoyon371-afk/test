@@ -370,8 +370,10 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 # Clean up the views text (e.g., "1.2M views" -> "1.2M")
                 views = re.sub(r"\s*views?\s*$", "", views_text, flags=re.IGNORECASE).strip()
 
-        # Extract uploader name only
+        # Extract uploader name with avatar
         uploader_name = None
+        uploader_avatar_url = None
+        
         uploader_el = card.find(class_=re.compile(r"video-uploader__name|video-thumb-uploader__name|video-user-info__name"))
         if not uploader_el:
              # Try finding uploader link within the card only
@@ -380,6 +382,27 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 uploader_name = _text(uploader_link)
         else:
             uploader_name = _text(uploader_el)
+            
+        # Extract uploader logo/avatar
+        # Typical classes: video-uploader-logo, video-thumb-uploader__logo, etc.
+        logo_el = card.find(class_=re.compile(r"video-uploader-logo|video-thumb-uploader__logo|video-user-info__avatar"))
+        if logo_el:
+            if logo_el.name == 'img':
+                uploader_avatar_url = _best_image_url(logo_el)
+            else:
+                img_in_logo = logo_el.find('img')
+                if img_in_logo:
+                     uploader_avatar_url = _best_image_url(img_in_logo)
+        
+        # If still no avatar, try checking the uploader link for an image
+        if not uploader_avatar_url:
+             uploader_link = card.find('a', href=re.compile(r"/users/|/channels/"))
+             if uploader_link:
+                 img = uploader_link.find('img')
+                 if img:
+                     # Check if it looks like an avatar (often small or specific class)
+                     if "avatar" in str(img.get("class", "")) or "logo" in str(img.get("class", "")):
+                         uploader_avatar_url = _best_image_url(img)
 
         # If no thumbnail, skip (usually not a card)
         if not thumb:
@@ -394,6 +417,7 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 "duration": duration,
                 "views": views,
                 "uploader_name": uploader_name,
+                "uploader_avatar_url": uploader_avatar_url,
             }
         )
 
