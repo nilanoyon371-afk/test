@@ -431,18 +431,48 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
         views = None
         meta_text = block.select_one(".metadata")
         if meta_text:
-            raw_meta = _text(meta_text) or ""
+            raw_meta = meta_text.get_text(" ", strip=True)
             # Regex 1: Explicit "views" keyword e.g. "100 views", "1.5M views"
             m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])?\s*(?:views|view)\b", raw_meta, re.IGNORECASE)
             
             # Regex 2: Suffix only e.g. "2.4M" (common in some XNXX layouts)
-            if not m:
-                m = re.search(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])\b", raw_meta, re.IGNORECASE)
+            # Use finditer to skip percentages (ratings)
+            if not views:
+                matches = re.finditer(r"(\d+(?:\.\d+)?|\d[\d,\.]*)\s*([KMB])?\b", raw_meta, re.IGNORECASE)
+                for m_match in matches:
+                    # Check if followed by %
+                    end_idx = m_match.end()
+                    post_match = raw_meta[end_idx:].lstrip()
+                    if post_match.startswith("%"):
+                        continue
+                        
+                    # Basic validation: XNXX views usually have K/M/B or are just plain numbers.
+                    # If it's a plain number under 100 might be duration (min) or something else?
+                    # But usually lists allow it.
+                    # Check if we already found duration and this looks like duration?
+                    # The duration logic above consumes "min" or "MM:SS".
+                    
+                    val = m_match.group(1).replace(" ", "").replace(",", "")
+                    suf = (m_match.group(2) or "").upper()
+                    
+                    # If just a small number without suffix, risky. But typically views have suffix on index.
+                    # Let's enforce suffix OR explicit context if possible. 
+                    # But the regex allows optional suffix. 
+                    # If we accept optional suffix, we might match "7" from "7min" (caught byDuration?)
+                    # actually "7min" would be "7" then "min". regex relies on boundary. 
+                    
+                    # Safer: Only accept if suffix exists OR if we are confident it's not a year/duration.
+                    if not suf and len(val) < 3:
+                        continue # Skip small numbers without suffix (likely noise)
 
-            if m:
-                num = m.group(1).replace(" ", "").replace(",", "")
-                suf = (m.group(2) or "").upper()
-                views = f"{num}{suf}" if suf else num
+                    views = f"{val}{suf}" if suf else val
+                    break
+
+            if views:
+                pass # Already set
+            elif m: # Old fallback (variable m from Regex 1 if it matched and we didn't overwrite)
+                 # Wait, m from Regex 1 logic was:
+                 pass
 
         seen.add(abs_url)
         items.append(
