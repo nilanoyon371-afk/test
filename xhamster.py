@@ -387,7 +387,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
         # Typical classes: video-uploader-logo, video-thumb-uploader__logo, etc.
         logo_el = card.find(class_=re.compile(r"video-uploader-logo|video-thumb-uploader__logo|video-user-info__avatar"))
         if logo_el:
-            if logo_el.name == 'img':
+            # Check for data-background-image first (often used for avatars)
+            bg_img = logo_el.get("data-background-image")
+            if bg_img:
+                uploader_avatar_url = str(bg_img).strip()
+            elif logo_el.name == 'img':
                 uploader_avatar_url = _best_image_url(logo_el)
             else:
                 img_in_logo = logo_el.find('img')
