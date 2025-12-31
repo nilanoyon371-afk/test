@@ -355,13 +355,29 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                        duration = f"{h}:{m:02d}:00" if h > 0 else f"{m}:00"
 
         
-        # Uploader
+        # Uploader and profile URL
         uploader_name = None
+        uploader_url = None
         # Usually in .thumb-under .metadata a
         # Or .uploader .name
         up_el = block.select_one(".uploader .name, .metadata a[href*='/pornstar/'], .metadata a[href*='/profiles/'], .metadata a[href*='/model/']")
         if up_el:
             uploader_name = _text(up_el)
+            # Check if it's an anchor tag or if parent is an anchor
+            if up_el.name == 'a':
+                href = up_el.get('href')
+                if href:
+                    try:
+                        uploader_url = str(base_uri.join(href))
+                    except Exception:
+                        pass
+            elif up_el.parent and up_el.parent.name == 'a':
+                href = up_el.parent.get('href')
+                if href:
+                    try:
+                        uploader_url = str(base_uri.join(href))
+                    except Exception:
+                        pass
             
         # Views
         views = None
@@ -384,6 +400,7 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 "duration": duration,
                 "views": views,
                 "uploader_name": uploader_name,
+                "uploader_url": uploader_url,
                 "category": None,
                 "tags": [],
             }
