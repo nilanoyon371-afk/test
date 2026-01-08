@@ -32,7 +32,7 @@ def _find_duration_like_text(node: Any) -> Optional[str]:
     return m.group(0) if m else None
 
 
-async def fetch_html(url: str) -> str:
+async def fetch_html(url: str) -> tuple[str, str]:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -46,7 +46,7 @@ async def fetch_html(url: str) -> str:
     ) as client:
         resp = await client.get(url)
         resp.raise_for_status()
-        return resp.text
+        return resp.text, str(resp.url)
 
 
 def _first_non_empty(*values: Optional[str]) -> Optional[str]:
@@ -258,7 +258,7 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
 
 
 async def scrape(url: str) -> dict[str, Any]:
-    html = await fetch_html(url)
+    html, _ = await fetch_html(url)
     return parse_page(html, url)
 
 
@@ -282,8 +282,22 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     last_exc: Exception | None = None
     for c in candidates:
         try:
-            html = await fetch_html(c)
-            used = c
+            html, final_url = await fetch_html(c)
+            
+            # Anti-loop check for pagination
+            if page > 1:
+                # If we ended up at the root URL (e.g. redirected to home), stop.
+                # Remove trailing slashes and query params for a rough logic check or just compare paths?
+                # Simplest: if final_url equals root (normalized)
+                r_norm = root.rstrip('/')
+                f_norm = final_url.split('?')[0].rstrip('/')
+                
+                if f_norm == r_norm:
+                    # Redirected to home/root -> End of pagination
+                    html = ""
+                    break
+
+            used = final_url
             if html:
                 break
         except Exception as e:
