@@ -258,3 +258,18 @@ async def get_xnxx_categories() -> list[CategoryItem]:
         raise HTTPException(status_code=404, detail="Categories file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
+
+
+@app.get("/masa/categories", response_model=list[CategoryItem])
+async def get_masa_categories() -> list[CategoryItem]:
+    """Get list of Masa categories"""
+    try:
+        # Load categories from JSON file
+        json_path = os.path.join(os.path.dirname(__file__), "masa_categories.json")
+        with open(json_path, 'r', encoding='utf-8') as f:
+            categories = json.load(f)
+        return [CategoryItem(**cat) for cat in categories]
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Categories file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
