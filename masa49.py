@@ -358,10 +358,13 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
             if time_text:
                 # Remove icon text and "Trending" badge if present
                 cleaned = time_text.replace("Trending", "").strip()
-                # Remove concatenated view counts (e.g., "15 hours ago1.2k" -> "15 hours ago")
-                m = re.search(r'(.+?\bago)', cleaned, re.IGNORECASE)
+                # Check for "ago" splitting to separate time and concatenated views
+                m = re.search(r'(.+?\bago)(.*)', cleaned, re.IGNORECASE)
                 if m:
                     upload_time = m.group(1).strip()
+                    tail = m.group(2).strip()
+                    if not views and tail:
+                        views = tail
                 else:
                     upload_time = cleaned
         
