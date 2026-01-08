@@ -272,7 +272,9 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
         candidates.extend(
             [
                 f"{root}page/{page}",
+                f"{root}page/{page}/",
                 f"{root}?page={page}",
+                f"{root}?paged={page}",
                 f"{root}pages/{page}",
             ]
         )
