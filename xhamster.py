@@ -293,6 +293,9 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     if page <= 1:
         candidates.append(root)
     else:
+        if "/categories/" in root or "/photos/categories/" in root:
+             candidates.append(f"{root.rstrip('/')}/{page}")
+
         candidates.extend(
             [
                 f"{root}?page={page}",

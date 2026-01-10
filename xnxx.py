@@ -325,10 +325,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
             ])
         else:
             # Generic pagination patterns
+            sep = "&" if "?" in root else "?"
             candidates.extend([
                 f"{root}{page - 1}/",       #  0-indexed direct append
-                f"{root}?p={page - 1}",
-                f"{root}?page={page}",
+                f"{root}{sep}p={page - 1}",
+                f"{root}{sep}page={page}",
             ])
 
     html = ""
