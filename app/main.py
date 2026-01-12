@@ -305,7 +305,7 @@ async def scrape_post(body: ScrapeRequest) -> ScrapeResponse:
 
 # ===== GLOBAL MULTI-SITE SEARCH (Porn-App Pro Feature) =====
 
-from global_search import global_search as _global_search, global_trending
+from app.services.global_search import global_search as _global_search, global_trending
 from fastapi import Query
 from typing import Optional
 
@@ -346,7 +346,7 @@ async def global_trending_endpoint(
 
 # ===== VIDEO STREAMING URLs =====
 
-from video_streaming import get_video_info, get_stream_url
+from app.services.video_streaming import get_video_info, get_stream_url
 
 @app.get("/api/v1/video/info")
 async def video_info_endpoint(url: str = Query(..., description="Video page URL")):
@@ -428,13 +428,8 @@ async def get_rate_limit_stats():
 async def get_xnxx_categories() -> list[CategoryItem]:
     """Get list of XNXX categories"""
     try:
-        # Load categories from JSON file
-        json_path = os.path.join(os.path.dirname(__file__), "xnxx_categories.json")
-        with open(json_path, 'r', encoding='utf-8') as f:
-            categories = json.load(f)
+        categories = xnxx.get_categories()
         return [CategoryItem(**cat) for cat in categories]
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Categories file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
 
@@ -443,13 +438,8 @@ async def get_xnxx_categories() -> list[CategoryItem]:
 async def get_masa_categories() -> list[CategoryItem]:
     """Get list of Masa categories"""
     try:
-        # Load categories from JSON file
-        json_path = os.path.join(os.path.dirname(__file__), "masa_categories.json")
-        with open(json_path, 'r', encoding='utf-8') as f:
-            categories = json.load(f)
+        categories = masa49.get_categories()
         return [CategoryItem(**cat) for cat in categories]
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Categories file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
 
@@ -458,13 +448,8 @@ async def get_masa_categories() -> list[CategoryItem]:
 async def get_xvideos_categories() -> list[CategoryItem]:
     """Get list of XVideos categories"""
     try:
-        # Load categories from JSON file
-        json_path = os.path.join(os.path.dirname(__file__), "xvideos_categories.json")
-        with open(json_path, 'r', encoding='utf-8') as f:
-            categories = json.load(f)
+        categories = xvideos.get_categories()
         return [CategoryItem(**cat) for cat in categories]
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Categories file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
 
@@ -473,12 +458,7 @@ async def get_xvideos_categories() -> list[CategoryItem]:
 async def get_xhamster_categories() -> list[CategoryItem]:
     """Get list of xHamster categories"""
     try:
-        # Load categories from JSON file
-        json_path = os.path.join(os.path.dirname(__file__), "xhamster_categories.json")
-        with open(json_path, 'r', encoding='utf-8') as f:
-            categories = json.load(f)
+        categories = xhamster.get_categories()
         return [CategoryItem(**cat) for cat in categories]
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Categories file not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
