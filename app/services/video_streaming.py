@@ -161,4 +161,9 @@ def get_proxy_url(original_url: str, api_base: str = "http://localhost:8000") ->
     """
     import urllib.parse
     encoded_url = urllib.parse.quote(original_url, safe='')
-    return f"{api_base}/api/hls/proxy?url={encoded_url}"
+    
+    # Check if it's an M3U8 playlist
+    if ".m3u8" in original_url:
+        return f"{api_base}/api/hls/playlist?url={encoded_url}"
+    else:
+        return f"{api_base}/api/hls/proxy?url={encoded_url}"
