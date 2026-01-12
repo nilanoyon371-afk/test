@@ -3,8 +3,10 @@
 import httpx
 from fastapi import HTTPException, status
 from fastapi.responses import StreamingResponse, Response
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict
 from app.config.settings import settings
+import time
+import asyncio
 
 try:
     from curl_cffi.requests import AsyncSession
@@ -20,36 +22,85 @@ class HLSProxy:
     def __init__(self):
         self.timeout = settings.HLS_PROXY_TIMEOUT
         self.client = None
+        # Simple in-memory cache for cookies: {referer_url: (cookies_dict, expiry_timestamp)}
+        self.cookie_cache: Dict[str, tuple] = {}
+        self.COOKIE_TTL = 300  # 5 minutes
     
-    async def get_client(self):
-        """Get or create HTTP client (curl_cffi or httpx)"""
-        if not self.client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "*/*, application/vnd.t1c.int-27903",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Sec-CH-UA": '"Google Chrome";v="120", "Chromium";v="120", "Not?A_Brand";v="24"',
-                "Sec-CH-UA-Mobile": "?0",
-                "Sec-CH-UA-Platform": '"Windows"',
-                "Referer": "https://xhamster.com/" 
-            }
-            
-            if HAS_CURL_CFFI:
-                self.client = AsyncSession(
-                    timeout=self.timeout,
-                    headers=headers,
-                    impersonate="chrome120",
-                    verify=False # Match user's "fetch" behavior if needed, often helps with proxies
-                )
-            else:
+    async def get_client(self, cookies: dict = None):
+        """
+        Get HTTP client. 
+        Note: We create a NEW session for each request if using curl_cffi with specific cookies, 
+        or manage a global one. For best cookie isolation, we might need dynamic sessions.
+        But for performance, we'll try to reuse or just update cookies.
+        """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "*/*, application/vnd.t1c.int-27903",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-CH-UA": '"Google Chrome";v="120", "Chromium";v="120", "Not?A_Brand";v="24"',
+            "Sec-CH-UA-Mobile": "?0",
+            "Sec-CH-UA-Platform": '"Windows"',
+            "Referer": "https://xhamster.com/" 
+        }
+        
+        if HAS_CURL_CFFI:
+            # For curl_cffi, it's safer to create a fresh session to ensure clean state and specific cookies
+            return AsyncSession(
+                timeout=self.timeout,
+                headers=headers,
+                impersonate="chrome120",
+                verify=False,
+                cookies=cookies
+            )
+        else:
+            if not self.client:
                 self.client = httpx.AsyncClient(
                     timeout=self.timeout,
                     follow_redirects=True,
                     headers=headers,
-                    http2=True, # Try to enable HTTP/2 if possible in fallback
+                    http2=True,
                     verify=False
                 )
-        return self.client
+            if cookies:
+                self.client.cookies = cookies
+            return self.client
+            
+    async def _get_valid_cookies(self, referer: str) -> dict:
+        """
+        Get valid cookies for the given referer, utilizing cache or fetching fresh ones.
+        """
+        if not referer:
+            return {}
+            
+        now = time.time()
+        
+        # Check cache
+        if referer in self.cookie_cache:
+            cookies, expiry = self.cookie_cache[referer]
+            if now < expiry:
+                return cookies
+        
+        # Fetch fresh cookies
+        print(f"Fetching fresh cookies for: {referer}")
+        try:
+            # Use a temporary session to fetch the page
+            if HAS_CURL_CFFI:
+                async with AsyncSession(impersonate="chrome120", verify=False) as s:
+                    await s.get(referer)
+                    cookies = s.cookies
+            else:
+                async with httpx.AsyncClient(verify=False, follow_redirects=True) as c:
+                    await c.get(referer)
+                    cookies = dict(c.cookies)
+            
+            # Update cache
+            if cookies:
+                self.cookie_cache[referer] = (cookies, now + self.COOKIE_TTL)
+                return cookies
+        except Exception as e:
+            print(f"Failed to fetch cookies for {referer}: {e}")
+            
+        return {}
     
     async def close(self):
         """Close HTTP client"""
@@ -64,7 +115,11 @@ class HLSProxy:
         """
         Proxy M3U8 playlist and rewrite URLs to point to proxy
         """
-        client = await self.get_client()
+        # Ensure we have cookies
+        cookies = await self._get_valid_cookies(referer)
+        
+        # Get client with cookies
+        client = await self.get_client(cookies)
         
         headers = {}
         if referer:
@@ -118,12 +173,16 @@ class HLSProxy:
                 status_code=status_code,
                 detail=f"Failed to fetch M3U8: {str(e)}"
             )
+        finally:
+             if HAS_CURL_CFFI:
+                 await client.close()
     
     async def stream_segment(self, url: str, referer: str = None) -> StreamingResponse:
         """
         Stream video segment (TS file)
         """
-        client = await self.get_client()
+        cookies = await self._get_valid_cookies(referer)
+        client = await self.get_client(cookies)
         
         headers = {}
         if referer:
@@ -133,13 +192,22 @@ class HLSProxy:
             # Different streaming logic for curl_cffi vs httpx
             if HAS_CURL_CFFI and isinstance(client, AsyncSession):
                 # curl_cffi streaming
-                # We need to use a generator that yields bytes
+                # We need to Keep the session open during streaming!
+                # We can't use 'async with' comfortably if we want to return response
+                # But StreamingResponse takes an async_generator.
+                
                 async def generate():
-                    async with client.stream("GET", url, headers=headers) as response:
-                        if response.status_code >= 400:
-                             raise HTTPException(status_code=response.status_code, detail="Segment fetch failed")
-                        async for chunk in response.aiter_content():
-                             yield chunk
+                    try:
+                        async with client.stream("GET", url, headers=headers) as response:
+                            if response.status_code >= 400:
+                                 # We can't raise HTTPException inside generator easily, 
+                                 # but this will stop stream
+                                 return 
+                            async for chunk in response.aiter_content():
+                                 yield chunk
+                    finally:
+                         # Close session when done
+                         await client.close()
                 
                 # Get content type via HEAD if possible, or default
                 content_type = "video/mp2t"
@@ -178,6 +246,7 @@ class HLSProxy:
                 )
         
         except Exception as e:
+            if HAS_CURL_CFFI: await client.close()
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to stream segment: {str(e)}"
@@ -187,7 +256,8 @@ class HLSProxy:
         """
         Generic proxy
         """
-        client = await self.get_client()
+        cookies = await self._get_valid_cookies(referer)
+        client = await self.get_client(cookies)
         
         headers = {}
         if referer:
@@ -217,10 +287,13 @@ class HLSProxy:
             )
         
         except Exception as e:
+            status_code = getattr(e, 'response', None) and getattr(e.response, 'status_code', 502) or 502
             raise HTTPException(
-                status_code=502,
+                status_code=status_code,
                 detail=f"Proxy request failed: {str(e)}"
             )
+        finally:
+            if HAS_CURL_CFFI: await client.close()
 
 
 # Global HLS proxy instance
