@@ -277,6 +277,48 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     # ZERO-COST VIDEO EXTRACTION
     video_data = _extract_video_data(html)
 
+    # Related Videos Extraction
+    related_videos = []
+    # xHamster uses various containers, often 'div.related-videos' or list loops
+    # Using a generic selector closer to what list_videos uses
+    
+    # Try finding the related container
+    rel_container = soup.find(class_=re.compile(r"related-videos|upsell-videos"))
+    if rel_container:
+         # xHamster video cards
+         for a in rel_container.find_all("a", class_="video-thumb__image-container"):
+             try:
+                 href = a.get("href")
+                 if not href: continue
+                 
+                 # Title usually in sibling or specific attr
+                 # xHamster structure is complex, often separate title container
+                 # Try finding parent card
+                 card = a.find_parent(class_="video-thumb")
+                 if not card: continue
+                 
+                 t_el = card.find(class_="video-thumb__info__name")
+                 r_title = _text(t_el)
+                 
+                 # Image
+                 r_img = a.find("img") or a.find("noscript").find("img") # xhamster uses lazy load
+                 if not r_img: r_img = a.find("img")
+                 r_thumb = _best_image_url(r_img)
+                 
+                 # Duration
+                 d_el = card.find(class_=re.compile("duration"))
+                 r_dur = _text(d_el)
+
+                 related_videos.append({
+                    "url": href,
+                    "title": r_title,
+                    "thumbnail_url": r_thumb,
+                    "duration": r_dur
+                 })
+                 if len(related_videos) >= 10: break
+             except Exception:
+                 continue
+
     return {
         "url": url,
         "title": title,
@@ -287,7 +329,8 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
-        "video": video_data,  # Added video data
+        "video": video_data,
+        "related_videos": related_videos, # Added related videos
     }
 
 

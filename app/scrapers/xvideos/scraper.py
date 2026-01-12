@@ -225,6 +225,55 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     # ZERO-COST VIDEO EXTRACTION
     video_data = _extract_video_streams(html)
 
+    # Related Videos Extraction
+    related_videos = []
+    # XVideos uses 'div.thumb-block' in 'div#video-suggestions' (sometimes different)
+    # Generic wide search in the footer area
+    
+    # XVideos often puts them just after the video in a generic container or reuses thumb-blocks
+    # Let's search for thumb-blocks that are NOT the main video (tough without specific container)
+    # Look for the "Related Videos" header
+    # Usually: <h2 ...>Related videos</h2> ... <div ...> ... blocks
+    
+    # Simpler: just find all thumb-blocks that are not the current URL?
+    # Or specifically looked for the container
+    
+    # XVideos usually has <div id="video_related_content">
+    rel_container = soup.find(id=re.compile("video_related_content|video-suggestions"))
+    if rel_container:
+        for block in rel_container.select(".thumb-block"):
+            try:
+                t_div = block.select_one(".thumb")
+                if not t_div: continue
+                link = t_div.find("a")
+                if not link: continue
+                
+                href = link.get("href")
+                if not href: continue
+                
+                # Title
+                r_title = _first_non_empty(link.get("title"), block.select_one("p.title a") and block.select_one("p.title a").get("title"))
+                
+                # Image
+                r_img = link.find("img")
+                r_thumb = _best_image_url(r_img)
+                
+                # Duration
+                r_dur = None
+                meta_dur = block.select_one(".duration")
+                if meta_dur: r_dur = _text(meta_dur)
+                
+                related_videos.append({
+                    "url": f"https://www.xvideos.com{href}" if href.startswith("/") else href,
+                    "title": r_title,
+                    "thumbnail_url": r_thumb,
+                    "duration": r_dur
+                })
+                
+                if len(related_videos) >= 10: break
+            except Exception:
+                continue
+
     return {
         "url": url,
         "title": title,
@@ -235,7 +284,8 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
-        "video": video_data, # Added video data
+        "video": video_data,
+        "related_videos": related_videos, # Added related videos
     }
 
 

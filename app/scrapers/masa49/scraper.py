@@ -262,6 +262,42 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     # ZERO-COST VIDEO EXTRACTION
     video_data = _extract_video_streams(html, soup)
 
+    # Related Videos Extraction
+    related_videos = []
+    # Masa49: Look for "Related Videos" section
+    # Usually <div class="related-posts"> or similar
+    rel_container = soup.find(class_=re.compile("related-posts|related-videos"))
+    if rel_container:
+         # Masa uses standard 'article' or 'div.post' usually
+         for art in rel_container.find_all(["article", "div"], class_=re.compile("post|video")):
+             try:
+                 link = art.find("a")
+                 if not link: continue
+                 href = link.get("href")
+                 if not href: continue
+                 
+                 # Title
+                 r_title = link.get("title") or _text(art.find(class_="title"))
+                 
+                 # Image
+                 r_img = link.find("img")
+                 r_thumb = _best_image_url(r_img)
+                 
+                 # Duration (might duplicate logic from listing)
+                 r_dur = None
+                 dur_node = art.find(class_="duration")
+                 if dur_node: r_dur = _text(dur_node)
+                 
+                 related_videos.append({
+                    "url": href,
+                    "title": r_title,
+                    "thumbnail_url": r_thumb,
+                    "duration": r_dur
+                 })
+                 if len(related_videos) >= 10: break
+             except Exception:
+                 continue
+
     return {
         "url": url,
         "title": title,
@@ -272,7 +308,8 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
-        "video": video_data, # Added video data
+        "video": video_data,
+        "related_videos": related_videos, # Added related videos
     }
 
 

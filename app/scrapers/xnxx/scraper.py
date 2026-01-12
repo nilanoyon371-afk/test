@@ -358,6 +358,55 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         if m:
             views = m.group(1).replace(" ", "")
     
+    if not category:
+        for a in soup.select('a[href*="/categories/"]'):
+            t = _text(a)
+            if t:
+                category = t
+                break
+
+    # Related Videos Extraction
+    related_videos = []
+    # XNXX typically uses 'div#related-videos' containing 'div.thumb-block'
+    rel_container = soup.find(id="related-videos")
+    if rel_container:
+        for block in rel_container.select(".thumb-block"):
+            try:
+                # Extract basic info from related block
+                t_div = block.select_one(".thumb")
+                if not t_div: continue
+                link = t_div.find("a")
+                if not link: continue
+                
+                href = link.get("href")
+                if not href: continue
+                
+                # Title
+                r_title = _first_non_empty(link.get("title"), block.select_one(".thumb-under p a") and block.select_one(".thumb-under p a").get("title"))
+                
+                # Image
+                r_img = link.find("img")
+                r_thumb = _best_image_url(r_img)
+                
+                # Duration
+                r_dur = None
+                meta = block.select_one(".metadata")
+                if meta:
+                     txt = _text(meta) or ""
+                     d_m = re.search(r"\b(?:\d{1,2}:)?\d{1,2}:\d{2}\b", txt)
+                     if d_m: r_dur = d_m.group(0)
+
+                related_videos.append({
+                    "url": f"https://www.xnxx.com{href}" if href.startswith("/") else href,
+                    "title": r_title,
+                    "thumbnail_url": r_thumb,
+                    "duration": r_dur
+                })
+                
+                if len(related_videos) >= 10: break
+            except Exception:
+                continue
+
     # NEW: Extract video URLs for streaming
     video_info = _extract_video_urls(html)
 
@@ -371,6 +420,7 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
+        "related_videos": related_videos, # Added related videos
         "video": video_info,  # NEW: Video streaming URLs
     }
 

@@ -346,7 +346,10 @@ async def global_trending_endpoint(
 
 # ===== VIDEO STREAMING URLs =====
 
-from app.services.video_streaming import get_video_info, get_stream_url
+from app.services.video_streaming import get_video_info, get_stream_url, get_proxy_url
+from app.api.endpoints import recommendations # Import recommendation router
+
+app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["AI Recommendations"])
 
 @app.get("/api/v1/video/info")
 async def video_info_endpoint(url: str = Query(..., description="Video page URL")):
