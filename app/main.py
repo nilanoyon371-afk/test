@@ -401,6 +401,7 @@ async def video_info_endpoint(request: Request, url: str = Query(..., descriptio
 
 @app.get("/api/v1/video/stream")
 async def direct_stream_endpoint(
+    request: Request,
     url: str = Query(..., description="Video page URL"),
     quality: str = Query("default", description="Quality: 1080p, 720p, 480p, or default")
 ):
@@ -419,7 +420,18 @@ async def direct_stream_endpoint(
             "format": "mp4"
         }
     """
-    return await get_stream_url(url, quality)
+    try:
+        # Determine API base URL for proxy links
+        from app.config.settings import settings
+        
+        if settings.BASE_URL:
+             api_base = settings.BASE_URL
+        else:
+             api_base = str(request.base_url)
+
+        return await get_stream_url(url, quality, api_base_url=api_base)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch stream URL: {str(e)}")
 
 
 # ===== Monitoring Endpoints (FREE) =====

@@ -104,13 +104,14 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
     }
 
 
-async def get_stream_url(url: str, quality: str = "default") -> dict:
+async def get_stream_url(url: str, quality: str = "default", api_base_url: str = "http://localhost:8000") -> dict:
     """
     Get direct stream URL for a specific quality
     
     Args:
         url: Video page URL
         quality: Desired quality (1080p, 720p, 480p, or "default")
+        api_base_url: Base URL for proxy links
         
     Returns:
         {"stream_url": "https://...mp4", "quality": "1080p", "format": "mp4"}
@@ -119,7 +120,7 @@ async def get_stream_url(url: str, quality: str = "default") -> dict:
     # But usually this is called by endpoint which calls get_video_info first.
     # Refactoring: we'll just call get_video_info here too.
     # Using default localhost for this low-level helper as it returns raw data
-    info = await get_video_info(url) 
+    info = await get_video_info(url, api_base_url=api_base_url) 
     video_data = info["video"]
     
     if quality == "default":
