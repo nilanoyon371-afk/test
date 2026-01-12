@@ -79,6 +79,22 @@ async def get_video_info(url: str) -> dict:
             detail="No video streams found for this URL. Video may be premium or removed."
         )
     
+    # Auto-Proxy for sites with hotlink protection (xHamster)
+    if "xhamster.com" in host or "xhcdn" in str(video_data).lower():
+        api_base_url = "http://localhost:8000" # TODO: Make this dynamic from request
+        # Wrap streams
+        if video_data.get("streams"):
+            for s in video_data["streams"]:
+                s["url"] = get_proxy_url(s["url"], api_base=api_base_url)
+        
+        # Wrap HLS
+        if video_data.get("hls"):
+            video_data["hls"] = get_proxy_url(video_data["hls"], api_base=api_base_url)
+            
+        # Wrap Default
+        if video_data.get("default"):
+            video_data["default"] = get_proxy_url(video_data["default"], api_base=api_base_url)
+
     return {
         "url": url,
         "title": metadata.get("title"),
@@ -89,6 +105,8 @@ async def get_video_info(url: str) -> dict:
         "uploader_name": metadata.get("uploader_name"),
         "category": metadata.get("category"),
         "tags": metadata.get("tags", []),
+        "related_videos": metadata.get("related_videos", []),
+        "preview_url": metadata.get("preview_url"),
         "video": video_data,
         "playable": True
     }
