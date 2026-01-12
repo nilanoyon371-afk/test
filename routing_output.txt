@@ -1,0 +1,20 @@
+﻿Testing URL Rewriting Logic:
+================================================================================
+Base Proxy URL: https://test-production-8fbc.up.railway.app/api/hls/proxy
+
+Input: 144p.av1.mp4.m3u8
+  -> Routes to: /api/hls/playlist
+  -> Expected: https://test-production-8fbc.up.railway.app/api/hls/playlist
+
+Input: segment001.ts
+  -> Routes to: /api/hls/proxy
+  -> Expected: https://test-production-8fbc.up.railway.app/api/hls/proxy
+
+Input: https://example.com/720p.m3u8
+  -> Routes to: /api/hls/playlist
+  -> Expected: https://test-production-8fbc.up.railway.app/api/hls/playlist
+
+Input: https://example.com/chunk.ts
+  -> Routes to: /api/hls/proxy
+  -> Expected: https://test-production-8fbc.up.railway.app/api/hls/proxy
+

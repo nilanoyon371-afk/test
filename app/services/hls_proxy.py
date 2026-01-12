@@ -152,14 +152,30 @@ class HLSProxy:
                         # Absolute URL - proxy it
                         # MUST encode the target URL
                         enc_line = urllib.parse.quote(line, safe='')
-                        proxied_url = f"{base_proxy_url}?url={enc_line}{referer_param}"
+                        
+                        # Check if this is another m3u8 (nested playlist) or a segment
+                        if '.m3u8' in line:
+                            # Nested m3u8 - use playlist endpoint
+                            proxied_url = f"{base_proxy_url.replace('/proxy', '/playlist')}?url={enc_line}{referer_param}"
+                        else:
+                            # Segment file - use proxy endpoint
+                            proxied_url = f"{base_proxy_url}?url={enc_line}{referer_param}"
+                        
                         modified_lines.append(proxied_url)
                     else:
                         # Relative URL - make it absolute first
                         base_url = url.rsplit('/', 1)[0]
                         absolute_url = f"{base_url}/{line}"
                         enc_abs = urllib.parse.quote(absolute_url, safe='')
-                        proxied_url = f"{base_proxy_url}?url={enc_abs}{referer_param}"
+                        
+                        # Check if this is another m3u8 (nested playlist) or a segment
+                        if '.m3u8' in absolute_url:
+                            # Nested m3u8 - use playlist endpoint
+                            proxied_url = f"{base_proxy_url.replace('/proxy', '/playlist')}?url={enc_abs}{referer_param}"
+                        else:
+                            # Segment file - use proxy endpoint
+                            proxied_url = f"{base_proxy_url}?url={enc_abs}{referer_param}"
+                        
                         modified_lines.append(proxied_url)
                 else:
                     modified_lines.append(line)

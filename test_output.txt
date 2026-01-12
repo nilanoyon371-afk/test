@@ -1,0 +1,30 @@
+﻿Testing HLS URL:
+======================================================================
+Original URL: https://video-nss.xhcdn.com/rOLt4mNtEjC0H_gKiT4gDQ==,1768273200/media=hls4/multi=256x144:144p:,426x240:240p:,854x480:480p:,1280x720:720p:,1920x1080:1080p:,3840x2160:2160p:/028/216/343/_TPL_.av1.mp4.m3u8
+Referer: https://xhamster.com/videos/when-my-bhabhi-crazy-for-hard-fucking-xhsIxaD
+======================================================================
+
+[TEST 1] Direct access to original URL:
+----------------------------------------------------------------------
+Status: 200
+Content preview:
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH=142011,BANDWIDTH=213017,RESOLUTION=256x144
+144p.av1.mp4.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH=296607,BANDWIDTH=444911,RESOLUTION=426x240
+240p.av1.mp4.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH=759588,BANDWIDTH=1139382,RESOLUTION=854x480
+480p.av1.mp4.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH=1269016,BANDWIDTH=1903524,RESOLUTION=1280x720
+720p.av1.mp4.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH
+
+
+[TEST 2] Access through Railway proxy:
+----------------------------------------------------------------------
+Proxy URL: https://test-production-8fbc.up.railway.app/api/hls/playlist?url=https%3A%2F%2Fvideo-nss.xhcdn.com%2...
+Status: 200
+Content preview:
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,AVERAGE-BANDWIDTH=142011,BANDWIDTH=213017,RESOLUTION=256x144
+https://test-production-8fbc.up.railway.app/api/hls/proxy?url=https%3A%2F%2Fvideo-nss.xhcdn.com%2FrOLt4mNtEjC0H_gKiT4gDQ%3D%3D%2C1768273200%2Fmedia%3Dhls4%2Fmulti%3D256x144%3A144p%3A%2C426x240%3A240p%3A%2C854x480%3A480p%3A%2C1280x720%3A720p%3A%2C1920x1080%3A1080p%3A%2C3840x2160%3A2160p%3A%2F028%2F216%2F343%2F144p.av1.mp4.m3u8&referer=https%3A%2F%2Fxhamster.com%2Fvideos%2Fwhen-my-bhabhi-crazy-for-h
