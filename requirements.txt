@@ -39,3 +39,6 @@ cryptography==44.0.0
 # prometheus-client==0.21.0
 # sentry-sdk==2.19.2
 
+
+# Browser Impersonation (Anti-Bot Bypass)
+curl_cffi==0.7.3
