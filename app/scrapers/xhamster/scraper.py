@@ -437,14 +437,25 @@ def _extract_video_data(html: str) -> dict[str, Any]:
                              elif "480" in raw_q: q_label = "480p"
                              elif "240" in raw_q: q_label = "240p"
                              
+                             fmt = "mp4"
+                             if ".m3u8" in str(item["url"]):
+                                 fmt = "hls"
+                             
                              streams.append({
                                 "quality": q_label,
                                 "url": item["url"],
-                                "format": "mp4"
+                                "format": fmt
                              })
 
     except Exception:
         pass
+        
+    # Fallback: Regex extraction for HLS if not found in JSON
+    # This matches the effective logic from debug scripts
+    if not hls_url:
+        m = re.search(r'["\'](https:[^"\']+\.m3u8[^"\']*)["\']', html)
+        if m:
+            hls_url = m.group(1).replace("\\/", "/")
         
     # Sort streams by quality (descending)
     def quality_score(s):

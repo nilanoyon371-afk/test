@@ -318,5 +318,25 @@
           }
         });
     </script>
+    <!-- Add Hls.js for HLS playback verification -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+      function playHls(url) {
+        const video = document.getElementById('videoPlayer');
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play();
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = url;
+          video.addEventListener('loadedmetadata', function() {
+            video.play();
+          });
+        }
+      }
+    </script>
   </body>
 </html>
