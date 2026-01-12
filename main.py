@@ -11,9 +11,22 @@ import xnxx
 import xvideos
 import json
 import os
+import asyncio
+import logging
+
+# Zero-cost optimizations
+from simple_cache import cache, cleanup_task as cache_cleanup
+from connection_pool import pool, fetch_html
+from rate_limiter import rate_limit_middleware, cleanup_task as rate_limit_cleanup
+
+logging.basicConfig(level=logging.INFO)
 
 # Create FastAPI app
-app = FastAPI(title="Scraper API - Simple Version")
+app = FastAPI(
+    title="Scraper API - Optimized Version",
+    description="🚀 Zero-cost optimized scraper API with caching, connection pooling, and rate limiting",
+    version="2.0.0"
+)
 
 # Add CORS middleware
 app.add_middleware(
@@ -23,6 +36,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on startup"""
+    # Start cache cleanup task
+    asyncio.create_task(cache_cleanup())
+    # Start rate limiter cleanup task
+    asyncio.create_task(rate_limit_cleanup())
+    logging.info("✅ Started background cleanup tasks")
+    logging.info("✅ Zero-cost optimizations enabled")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    # Close HTTP connection pool
+    await pool.close()
+    logging.info("✅ Closed HTTP connection pool")
 
 
 class ScrapeRequest(BaseModel):
@@ -142,12 +177,26 @@ async def health() -> dict[str, str]:
 @app.get("/scrape", response_model=ScrapeResponse)
 async def scrape(url: str) -> ScrapeResponse:
     req = ScrapeRequest(url=url)
+    
+    # Check cache first (ZERO COST OPTIMIZATION)
+    cache_key = f"scrape:{str(req.url)}"
+    cached_result = await cache.get(cache_key)
+    if cached_result:
+        logging.info(f"⚡ Cache HIT for {url}")
+        return ScrapeResponse(**cached_result)
+    
+    # Cache miss - scrape the URL
     try:
         data = await _scrape_dispatch(str(req.url), req.url.host or "")
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to fetch url") from e
+    
+    # Store in cache for 1 hour (3600 seconds)
+    await cache.set(cache_key, data, ttl_seconds=3600)
+    logging.info(f"💾 Cached result for {url}")
+    
     return ScrapeResponse(**data)
 
 
@@ -161,12 +210,25 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[Lis
     if limit > 60:
         limit = 60
 
+    # Check cache (ZERO COST OPTIMIZATION)
+    cache_key = f"list:{str(req.base_url)}:p{page}:l{limit}"
+    cached_items = await cache.get(cache_key)
+    if cached_items:
+        logging.info(f"⚡ Cache HIT for list {base_url} page {page}")
+        return [ListItem(**it) for it in cached_items]
+
     try:
         items = await _list_dispatch(str(req.base_url), req.base_url.host or "", page, limit)
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail="Upstream returned error") from e
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to fetch url") from e
+    
+    # Cache for 15 minutes (900 seconds)
+    await cache.set(cache_key, items, ttl_seconds=900)
+    logging.info(f"💾 Cached list for {base_url} page {page}")
+    
+    return [ListItem(**it) for it in items]
     
     # We must explicitly construct ListItem without defaults for missing keys to ensure exclude_unset works?
     # Actually, Pydantic v2 (or v1) behavior:
@@ -243,6 +305,127 @@ async def scrape_post(body: ScrapeRequest) -> ScrapeResponse:
     except Exception as e:
         raise HTTPException(status_code=502, detail="Failed to fetch url") from e
     return ScrapeResponse(**data)
+
+
+# ===== GLOBAL MULTI-SITE SEARCH (Porn-App Pro Feature) =====
+
+from global_search import global_search as _global_search, global_trending
+from fastapi import Query
+from typing import Optional
+
+@app.get("/api/v1/search/global")
+async def global_search_endpoint(
+    query: str = Query(..., description="Search keyword (e.g., 'blonde', 'asian')"),
+    sites: Optional[list[str]] = Query(None, description="Sites to search (default: all)"),
+    limit_per_site: int = Query(10, ge=1, le=50, description="Results per site"),
+    max_sites: int = Query(30, ge=1, le=50, description="Max sites to search")
+):
+    """
+    🔥 KILLER FEATURE: Search across multiple sites simultaneously!
+    
+    This is porn-app.com's $3.99/mo Pro feature - yours for FREE!
+    
+    Examples:
+    - /api/v1/search/global?query=blonde
+    - /api/v1/search/global?query=asian&sites=xhamster&sites=xnxx&limit_per_site=20
+    
+    Returns results from all sites in ONE request instead of making 4+ separate calls.
+    """
+    return await _global_search(query, sites, limit_per_site, max_sites)
+
+
+@app.get("/api/v1/trending/global")
+async def global_trending_endpoint(
+    sites: Optional[list[str]] = Query(None, description="Sites to fetch from (default: all)"),
+    limit_per_site: int = Query(10, ge=1, le=50, description="Results per site")
+):
+    """
+    Get trending/popular videos from all sites at once
+    
+    Example:
+    - /api/v1/trending/global?limit_per_site=20
+    """
+    return await global_trending(sites, limit_per_site)
+
+
+# ===== VIDEO STREAMING URLs =====
+
+from video_streaming import get_video_info, get_stream_url
+
+@app.get("/api/v1/video/info")
+async def video_info_endpoint(url: str = Query(..., description="Video page URL")):
+    """
+    🎬 Get video streaming information
+    
+    Returns playable video stream URLs (MP4, HLS) for direct playback.
+    Your API returns URLs - clients decide how to play them (HTML5, mobile apps, etc.)
+    
+    Example:
+        /api/v1/video/info?url=https://www.xnxx.com/video-abc123/sample
+        
+    Response:
+        {
+            "title": "Video Title",
+            "video": {
+                "streams": [
+                    {"quality": "1080p", "url": "https://...mp4", "format": "mp4"},
+                    {"quality": "480p", "url": "https://...mp4", "format": "mp4"}
+                ],
+                "hls": "https://.../master.m3u8",
+                "default": "https://...1080p.mp4",
+                "has_video": true
+            },
+            "playable": true
+        }
+    """
+    return await get_video_info(url)
+
+
+@app.get("/api/v1/video/stream")
+async def direct_stream_endpoint(
+    url: str = Query(..., description="Video page URL"),
+    quality: str = Query("default", description="Quality: 1080p, 720p, 480p, or default")
+):
+    """
+    Get direct video stream URL
+    
+    Simpler endpoint that just returns the video URL for a specific quality.
+    
+    Example:
+        /api/v1/video/stream?url=https://xnxx.com/video-123&quality=1080p
+        
+    Response:
+        {
+            "stream_url": "https://...video.mp4",
+            "quality": "1080p",
+            "format": "mp4"
+        }
+    """
+    return await get_stream_url(url, quality)
+
+
+# ===== Monitoring Endpoints (FREE) =====
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """Get cache performance statistics"""
+    return cache.get_stats()
+
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """Clear all cache entries"""
+    await cache.clear()
+    return {"status": "cache cleared", "message": "All cached items removed"}
+
+
+@app.get("/rate-limit/stats")
+async def get_rate_limit_stats():
+    """Get rate limiter statistics"""
+    return rate_limiter.get_stats()
+
+
+# ===== Category Endpoints =====
 
 
 @app.get("/xnxx/categories", response_model=list[CategoryItem])
