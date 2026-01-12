@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Query, Response, Request
 from fastapi.responses import StreamingResponse
 from app.services.hls_proxy import hls_proxy
 
@@ -17,23 +17,18 @@ async def proxy_stream(url: str = Query(..., description="URL to proxy")):
     return await hls_proxy.proxy_request(url)
 
 @router.get("/playlist")
-async def proxy_playlist(url: str = Query(..., description="M3U8 Playlist URL")):
+async def proxy_playlist(request: Request, url: str = Query(..., description="M3U8 Playlist URL")):
     """
     Proxy M3U8 playlist and rewrite internal URLs to use /proxy endpoint.
     """
-    # We need the base URL of THIS API to rewrite links
-    # Hardcoded for now or use Request request.base_url
-    # Let's assume the client uses the same host.
+    # We use the base URL of the incoming request to rewrite links
+    # This ensures links work on both localhost and production (Railway)
     
-    # We'll use a relative path for rewrites if possible, or construct absolute.
-    # But proxy_m3u8 takes base_proxy_url.
-    # Let's use a hardcoded base for simplicity or extract from request if we had Request object.
+    # request.base_url returns e.g. "https://my-app.railway.app/"
+    base_url = str(request.base_url).rstrip("/")
     
-    # Ideally should be: http://localhost:8000/api/hls/proxy
-    # But to be safe let's use the /proxy endpoint relative to API root
-    
-    # For now, let's just pass the localhost default or specific dev URL
-    base_proxy_url = "http://localhost:8000/api/hls/proxy"
+    # Construct the proxy endpoint URL
+    base_proxy_url = f"{base_url}/api/hls/proxy"
     
     content = await hls_proxy.proxy_m3u8(url, base_proxy_url)
     

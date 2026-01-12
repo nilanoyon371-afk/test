@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, field_validator
 from typing import Any, Optional
@@ -357,7 +357,7 @@ app.include_router(recommendations.router, prefix="/api/v1/recommendations", tag
 app.include_router(hls.router, prefix="/api/hls", tags=["HLS Proxy"])
 
 @app.get("/api/v1/video/info")
-async def video_info_endpoint(url: str = Query(..., description="Video page URL")):
+async def video_info_endpoint(request: Request, url: str = Query(..., description="Video page URL")):
     """
     🎬 Get video streaming information
     

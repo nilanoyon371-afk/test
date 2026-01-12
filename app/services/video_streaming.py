@@ -10,29 +10,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def get_video_info(url: str) -> dict:
+async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") -> dict:
     """
     Get video streaming information for a given URL
     
     Args:
         url: Video page URL (e.g., https://xnxx.com/video-123)
+        api_base_url: Base URL of the API for proxy links (e.g., https://my-api.com)
         
     Returns:
         {
-            "url": "https://...",
-            "title": "Video Title",
-            "thumbnail_url": "...",
-            "duration": "10:23",
-            "video": {
-                "streams": [
-                    {"quality": "1080p", "url": "https://...mp4", "format": "mp4"},
-                    {"quality": "480p", "url": "https://...mp4", "format": "mp4"}
-                ],
-                "hls": "https://.../master.m3u8",
-                "default": "https://...1080p.mp4",
-                "has_video": true
-            },
-            "playable": true
+            ...
         }
     """
     # Import here to avoid circular dependency
@@ -81,19 +69,23 @@ async def get_video_info(url: str) -> dict:
     
     # Auto-Proxy for sites with hotlink protection (xHamster)
     if "xhamster.com" in host or "xhcdn" in str(video_data).lower():
-        api_base_url = "http://localhost:8000" # TODO: Make this dynamic from request
+        # api_base_url is passed from the endpoint
+        
+        # Ensure api_base_url doesn't end with slash
+        base_url = api_base_url.rstrip("/")
+        
         # Wrap streams
         if video_data.get("streams"):
             for s in video_data["streams"]:
-                s["url"] = get_proxy_url(s["url"], api_base=api_base_url)
+                s["url"] = get_proxy_url(s["url"], api_base=base_url)
         
         # Wrap HLS
         if video_data.get("hls"):
-            video_data["hls"] = get_proxy_url(video_data["hls"], api_base=api_base_url)
+            video_data["hls"] = get_proxy_url(video_data["hls"], api_base=base_url)
             
         # Wrap Default
         if video_data.get("default"):
-            video_data["default"] = get_proxy_url(video_data["default"], api_base=api_base_url)
+            video_data["default"] = get_proxy_url(video_data["default"], api_base=base_url)
 
     return {
         "url": url,
@@ -123,7 +115,11 @@ async def get_stream_url(url: str, quality: str = "default") -> dict:
     Returns:
         {"stream_url": "https://...mp4", "quality": "1080p", "format": "mp4"}
     """
-    info = await get_video_info(url)
+    # Note: get_video_info is async, so this needs to be awaited if called directly.
+    # But usually this is called by endpoint which calls get_video_info first.
+    # Refactoring: we'll just call get_video_info here too.
+    # Using default localhost for this low-level helper as it returns raw data
+    info = await get_video_info(url) 
     video_data = info["video"]
     
     if quality == "default":
