@@ -83,6 +83,9 @@ class ScrapeResponse(BaseModel):
     uploader_name: str | None = None
     category: str | None = None
     tags: list[str] = []
+    related_videos: list[dict[str, Any]] = []
+    video: dict[str, Any] | None = None
+    preview_url: str | None = None # Preview video/sprite URL
 
 
 class ListItem(BaseModel):

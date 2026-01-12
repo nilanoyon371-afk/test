@@ -410,6 +410,26 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
     # NEW: Extract video URLs for streaming
     video_info = _extract_video_urls(html)
 
+    # Preview Extraction
+    preview_url = None
+    # XNXX html5player.setThumbSlide('...') or setThumbSlideBig('...')
+    # These are sprite sheets or single images, but sometimes setVideoPreview or similar exists?
+    # Actually setThumbSlide often points to a sprite sheet which is tricky to use as a "video preview".
+    # BUT, recently XNXX/XVideos added setVideoPreview for some ids.
+    # Let's look for known preview patterns.
+    
+    # 1. Slide/Timeline
+    # html5player.setThumbSlide('/img/00/00/00/big.jpg') -> often not a video.
+    
+    # 2. XNXX sometimes exposes a short mp4 preview in JSON-LD or meta?
+    # No, usually they use "mouse over" sprites.
+    
+    # Let's try to capture the "ThumbSlide" url as a "preview_image" or "preview_scrubber"
+    # For now, let's look for setThumbSlideBig
+    pv_match = re.search(r"html5player\.setThumbSlideBig\(['\"](.+?)['\"]\)", html)
+    if pv_match:
+        preview_url = pv_match.group(1)
+
     return {
         "url": url,
         "title": title,
@@ -420,8 +440,9 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "uploader_name": uploader,
         "category": category,
         "tags": tags,
-        "related_videos": related_videos, # Added related videos
-        "video": video_info,  # NEW: Video streaming URLs
+        "related_videos": related_videos,
+        "video": video_info,
+        "preview_url": preview_url, # Added preview (sprite/scrubber)
     }
 
 

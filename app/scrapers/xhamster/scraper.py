@@ -319,6 +319,20 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
              except Exception:
                  continue
 
+    # Preview Extraction
+    preview_url = None
+    # xHamster window.initials often has 'scrubber' or 'preview'
+    # It was parsed inside _extract_video_data actually, but let's check if we can get it here.
+    # We can invoke extraction again or passing it out is cleaner.
+    # For now, let's do a quick regex for the scrubber since we don't return raw json from _extract
+    
+    # scrubber: { sprite: "..." }
+    # or look for "url":".../sprite..."
+    
+    scrubber_match = re.search(r'["\']scrubber["\']\s*:\s*\{\s*["\']sprite["\']\s*:\s*["\']([^"\']+)["\']', html)
+    if scrubber_match:
+        preview_url = scrubber_match.group(1).replace("\\/", "/")
+
     return {
         "url": url,
         "title": title,
@@ -330,7 +344,8 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "category": category,
         "tags": tags,
         "video": video_data,
-        "related_videos": related_videos, # Added related videos
+        "related_videos": related_videos,
+        "preview_url": preview_url, # Added preview
     }
 
 

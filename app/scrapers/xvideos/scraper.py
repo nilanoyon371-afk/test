@@ -286,6 +286,7 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
         "tags": tags,
         "video": video_data,
         "related_videos": related_videos, # Added related videos
+        "preview_url": preview_url, # Added preview
     }
 
 
