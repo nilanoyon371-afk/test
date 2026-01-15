@@ -188,7 +188,12 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     else:
         url += f"?page={page}"
         
-    html = await fetch_html(url)
+    try:
+        html = await fetch_html(url)
+    except Exception:
+        # Fallback or return empty if fetch fails (e.g. 403 Forbidden)
+        return []
+
     soup = BeautifulSoup(html, "lxml")
     
     items = []
