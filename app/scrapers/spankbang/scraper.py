@@ -194,10 +194,11 @@ async def scrape(url: str) -> dict[str, Any]:
 async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dict[str, Any]]:
     # Pagination: spankbang.com/upcoming/2
     
-    url = base_url.rstrip("/")
+    url = base_url
     
     # Spankbang standard: /2 for page 2
     if page > 1:
+        url = base_url.rstrip("/")
         if url == "https://spankbang.com":
              url = "https://spankbang.com/trending_videos"
         elif "/s/" in url:
