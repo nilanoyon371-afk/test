@@ -105,21 +105,36 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
         if video_data.get("hls"):
             video_data["hls"] = proxy_wrap(video_data["hls"])
 
-    return {
-        "url": url,
-        "title": metadata.get("title"),
-        "description": metadata.get("description"),
-        "thumbnail_url": metadata.get("thumbnail_url"),
-        "duration": metadata.get("duration"),
-        "views": metadata.get("views"),
-        "uploader_name": metadata.get("uploader_name"),
-        "category": metadata.get("category"),
-        "tags": metadata.get("tags", []),
-        "related_videos": metadata.get("related_videos", []),
-        "preview_url": metadata.get("preview_url"),
-        "video": video_data,
-        "playable": True
-    }
+    # Build response with consistent field order
+    # For SpankBang, exclude metadata fields as they're not reliably extracted
+    if scraper_module == spankbang:
+        # SpankBang: minimal metadata
+        response = {
+            "url": url,
+            "tags": metadata.get("tags", []),
+            "related_videos": metadata.get("related_videos", []),
+            "video": video_data,
+            "playable": True,
+        }
+    else:
+        # All other sources: full metadata
+        response = {
+            "url": url,
+            "title": metadata.get("title"),
+            "description": metadata.get("description"),
+            "thumbnail_url": metadata.get("thumbnail_url"),
+            "duration": metadata.get("duration"),
+            "views": metadata.get("views"),
+            "uploader_name": metadata.get("uploader_name"),
+            "category": metadata.get("category"),
+            "tags": metadata.get("tags", []),
+            "related_videos": metadata.get("related_videos", []),
+            "preview_url": metadata.get("preview_url"),
+            "video": video_data,
+            "playable": True,
+        }
+    
+    return response
 
 
 async def get_stream_url(url: str, quality: str = "default", api_base_url: str = "http://localhost:8000") -> dict:
