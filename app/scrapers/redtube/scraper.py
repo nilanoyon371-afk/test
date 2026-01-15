@@ -262,10 +262,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     if url in ("https://www.redtube.com", "http://www.redtube.com"):
          url = "https://www.redtube.com/"
     
-    if "?" in url:
-        url += f"&page={page}"
-    else:
-        url += f"?page={page}"
+    if page > 1:
+        if "?" in url:
+            url += f"&page={page}"
+        else:
+            url += f"?page={page}"
         
     try:
         html = await fetch_html(url)
