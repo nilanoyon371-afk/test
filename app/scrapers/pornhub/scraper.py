@@ -193,49 +193,55 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     
     items = []
     # PH video blocks: li.pcVideoListItem
+    # PH video blocks: li.pcVideoListItem
     for li in soup.select("li.pcVideoListItem"):
-        if not li.get("data-video-vkey"): continue
-        
-        link = li.select_one("a")
-        if not link: continue
-        
-        href = link.get("href")
-        if not href.startswith("http"):
-            href = "https://www.pornhub.com" + href
+        try:
+            if not li.get("data-video-vkey"): continue
             
-        title = link.get("title")
-        if not title:
-            t_el = li.select_one(".title a")
-            if t_el: title = t_el.get_text(strip=True)
+            link = li.select_one("a")
+            if not link: continue
             
-        img_el = li.select_one("img")
-        thumb = img_el.get("src") if img_el else None
-        if thumb and "data:image" in thumb:
-            thumb = img_el.get("data-src") or img_el.get("data-image")
+            href = link.get("href")
+            if not href: continue
             
-        dur_el = li.select_one(".duration")
-        duration = dur_el.get_text(strip=True) if dur_el else None
-        
-        view_el = li.select_one(".network-view-count") # sometimes different
-        views = view_el.get_text(strip=True) if view_el else None
-        
-        if not views:
-            v_var = li.select_one(".views var")
-            if v_var: views = v_var.get_text(strip=True)
+            if not href.startswith("http"):
+                href = "https://www.pornhub.com" + href
+                
+            title = link.get("title")
+            if not title:
+                t_el = li.select_one(".title a")
+                if t_el: title = t_el.get_text(strip=True)
+                
+            img_el = li.select_one("img")
+            thumb = img_el.get("src") if img_el else None
+            if thumb and "data:image" in thumb:
+                thumb = img_el.get("data-src") or img_el.get("data-image")
+                
+            dur_el = li.select_one(".duration")
+            duration = dur_el.get_text(strip=True) if dur_el else None
             
-        uploader = None
-        u_el = li.select_one(".usernameWrap a")
-        if u_el: uploader = u_el.get_text(strip=True)
-        
-        items.append({
-            "url": href,
-            "title": title,
-            "thumbnail_url": thumb,
-            "duration": duration,
-            "views": views,
-            "uploader_name": uploader,
-            "category": None,
-            "tags": []
-        })
+            view_el = li.select_one(".network-view-count") # sometimes different
+            views = view_el.get_text(strip=True) if view_el else None
+            
+            if not views:
+                v_var = li.select_one(".views var")
+                if v_var: views = v_var.get_text(strip=True)
+                
+            uploader = None
+            u_el = li.select_one(".usernameWrap a")
+            if u_el: uploader = u_el.get_text(strip=True)
+            
+            items.append({
+                "url": href,
+                "title": title,
+                "thumbnail_url": thumb,
+                "duration": duration,
+                "views": views,
+                "uploader_name": uploader,
+                "category": None,
+                "tags": []
+            })
+        except Exception:
+            continue
         
     return items
