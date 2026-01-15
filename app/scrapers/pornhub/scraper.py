@@ -27,7 +27,7 @@ async def fetch_html(url: str) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        # "Cookie": "platform=pc; bs=zwqm48..." # Might be needed later
+        "Cookie": "platform=pc" # Critical for consistent desktop HTML structure
     }
     async with httpx.AsyncClient(
         follow_redirects=True,
