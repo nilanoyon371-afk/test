@@ -77,6 +77,34 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
             detail="No video streams found for this URL. Video may be premium or removed."
         )
     
+    # Post-process streams to wrap with proxy if needed (Beeg, etc.)
+    # This logic mirrors get_stream_url's proxy wrapping but for the entire list
+    if video_data.get("has_video") and video_data.get("streams"):
+        from urllib.parse import quote
+        
+        # Helper to wrap URL
+        def proxy_wrap(stream_url):
+            if "externulls.com" in stream_url or "beeg.com" in stream_url:
+                if ".m3u8" in stream_url or "media=hls" in stream_url:
+                    encoded_url = quote(stream_url)
+                    encoded_referer = quote("https://beeg.com/")
+                    # Ensure api_base_url is valid
+                    base = api_base_url if api_base_url else "http://localhost:8000"
+                    return f"{base}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
+            return stream_url
+
+        # Wrap extracted streams
+        for stream in video_data["streams"]:
+            stream["url"] = proxy_wrap(stream["url"])
+            
+        # Wrap default stream
+        if video_data.get("default"):
+            video_data["default"] = proxy_wrap(video_data["default"])
+            
+        # Wrap HLS stream specifically if present as key
+        if video_data.get("hls"):
+            video_data["hls"] = proxy_wrap(video_data["hls"])
+
     return {
         "url": url,
         "title": metadata.get("title"),
@@ -136,6 +164,21 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         fmt = "hls"
         if selected_quality == "default":
             selected_quality = "adaptive"
+            
+        # PROXY WRAPPER FOR BEEG (and potentially others needing headers)
+        if "externulls.com" in stream_url or "beeg.com" in stream_url:
+            from urllib.parse import quote
+            # Construct proxy URL
+            # api_base_url comes from get_video_info caller
+            # We need to ensure we have a valid api_base_url
+            if not api_base_url:
+                api_base_url = "http://localhost:8000" # fallback
+                
+            encoded_url = quote(stream_url)
+            # Beeg typically needs Referer: https://beeg.com/
+            encoded_referer = quote("https://beeg.com/")
+            
+            stream_url = f"{api_base_url}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
             
     return {
         "stream_url": stream_url,
