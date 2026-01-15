@@ -193,12 +193,12 @@ def _extract_video_urls(html: str) -> dict[str, Any]:
                 "format": "mp4"
             })
     
-    # Determine default stream (prefer highest quality)
+    # Determine default stream (prefer HLS, fallback to MP4)
     default_url = None
-    if streams:
-        default_url = streams[0]["url"]  # First stream is highest quality
-    elif hls_url:
+    if hls_url:
         default_url = hls_url
+    elif streams:
+        default_url = streams[0]["url"]
     
     return {
         "streams": streams,
