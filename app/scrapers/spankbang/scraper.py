@@ -218,30 +218,31 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     items = []
     
     # Updated Selectors based on browser analysis
-    # Strategy: Find the container with the MOST video items to avoid "Featured" or "Trending" widgets
+    # Strategy: Find all potential video items, then group by parent container.
+    # The container with the most items is the Main List.
     container_selector = ".js-video-item, .video-item, .video-list-video"
+    all_items = soup.select(container_selector)
     selected_items = []
     
-    # 1. Try to find specific container lists first
-    media_lists = soup.select(".js-media-list")
-    if media_lists:
-        # Sort by number of video items inside
-        best_container = None
+    if all_items:
+        # Group items by parent
+        parent_counts = {}
+        for item in all_items:
+            p = item.parent
+            if p not in parent_counts:
+                parent_counts[p] = []
+            parent_counts[p].append(item)
+            
+        # Find parent with most items
+        best_parent = None
         max_items = -1
         
-        for c in media_lists:
-            count = len(c.select(container_selector))
-            if count > max_items:
-                max_items = count
-                best_container = c
-                
-        if best_container and max_items > 0:
-            selected_items = best_container.select(container_selector)
+        for p, items_list in parent_counts.items():
+            if len(items_list) > max_items:
+                max_items = len(items_list)
+                best_parent = p
+                selected_items = items_list
     
-    # 2. Fallback: If no containers found (or empty), select from global soup
-    if not selected_items:
-         selected_items = soup.select(container_selector)
-         
     for item in selected_items:
         try:
             # Get the main link (usually a.thumb for thumbnail)
