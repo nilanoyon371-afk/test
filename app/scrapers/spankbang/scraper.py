@@ -6,6 +6,19 @@ import os
 from typing import Any, Optional
 
 from curl_cffi.requests import AsyncSession
+from bs4 import BeautifulSoup
+
+def can_handle(host: str) -> bool:
+    return "spankbang.com" in host.lower()
+
+def get_categories() -> list[dict]:
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        json_path = os.path.join(current_dir, "categories.json")
+        with open(json_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
 
 async def fetch_html(url: str) -> str:
     # Use curl_cffi to bypass Cloudflare
