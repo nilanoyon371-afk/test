@@ -337,10 +337,10 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
             items.append({
                 "url": href,
                 "title": title or "Unknown",
-                "thumbnail": thumb,
+                "thumbnail_url": thumb,
                 "duration": duration,
                 "views": views,
-                "uploader": uploader,
+                "uploader_name": uploader,
                 "preview_url": thumb # Use thumb as preview
             })
         except Exception as e:

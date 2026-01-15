@@ -1,5 +1,10 @@
 [
     {
+        "name": "Home",
+        "url": "https://www.redtube.com/",
+        "video_count": 0
+    },
+    {
         "name": "Recommended",
         "url": "https://www.redtube.com/recommended",
         "video_count": 0
