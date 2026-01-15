@@ -327,35 +327,49 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 thumb = img.get("data-src") or img.get("src")
             
             # Title
-            title_div = box.select_one(".video-title")
+            title_div = box.select_one(".video-title, .tm_video_title, .video-box-title")
             title = None
             if title_div: title = title_div.get_text(strip=True)
+            if not title and link.get("title"): title = link.get("title")
             if not title and img: title = img.get("alt")
             
             # Duration
-            dur_div = box.select_one(".duration")
+            dur_div = box.select_one(".duration, .tm_video_duration, .video-duration")
             duration = None
             if dur_div: duration = dur_div.get_text(strip=True)
             
             # Views
             views = None
             # Info usually in .video-infos -> "X views"
-            infos = box.select_one(".video-infos")
+            # User provided: <span class="info-views">27</span>
+            infos = box.select_one(".video-infos, .video-views, .tm_video_views, .info-views")
             if infos:
-                info_txt = infos.get_text()
-                m = re.search(r'([\d,KM\.]+)\s*views', info_txt, re.IGNORECASE)
+                info_txt = infos.get_text(strip=True)
+                # Try simple number match if "views" text is missing
+                if info_txt.isdigit() or re.match(r'^[\d,KM\.]+$', info_txt):
+                     views = info_txt
+                else:
+                    m = re.search(r'([\d,KM\.]+)\s*views', info_txt, re.IGNORECASE)
+                    if m: views = m.group(1)
+            
+            if not views:
+                # Fallback: Search in entire box text
+                m = re.search(r'([\d,KM\.]+)\s*views', box.get_text(), re.IGNORECASE)
                 if m: views = m.group(1)
             
             # Uploader
-            uploader = None
-            # often not shown in grid, or hidden.
-            
+            uploader = "YouPorn" # Default
+            # User provided: <a class="author-title-text " ...>banx66</a>
+            submitter = box.select_one(".submitter, .video-uploaded-by, .author-title-text, .owner-name")
+            if submitter:
+                uploader = submitter.get_text(strip=True).replace("Uploaded by:", "").strip()
+
             items.append({
                 "url": href,
-                "title": title,
+                "title": title or "Unknown",
                 "thumbnail_url": thumb,
-                "duration": duration,
-                "views": views,
+                "duration": duration or "0:00",
+                "views": views or "0",
                 "uploader_name": uploader,
             })
         except Exception:
