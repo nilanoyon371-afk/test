@@ -14,12 +14,12 @@ def can_handle(host: str) -> bool:
 def get_categories() -> list[dict]:
     # TODO: Scraping categories dynamically or static list
     return [
-        {"name": "Recommended", "url": "recommended", "id": "recommended"},
-        {"name": "Hentai", "url": "hentai", "id": "hentai"},
-        {"name": "Milf", "url": "milf", "id": "milf"},
-        {"name": "Teen", "url": "teen", "id": "teen"},
-        {"name": "Japanese", "url": "japanese", "id": "japanese"},
-        {"name": "Big Tits", "url": "big-tits", "id": "big-tits"},
+        {"name": "Recommended", "url": "https://www.pornhub.com/recommended", "id": "recommended"},
+        {"name": "Hentai", "url": "https://www.pornhub.com/video/search?search=hentai", "id": "hentai"},
+        {"name": "Milf", "url": "https://www.pornhub.com/video/search?search=milf", "id": "milf"},
+        {"name": "Teen", "url": "https://www.pornhub.com/video/search?search=teen", "id": "teen"},
+        {"name": "Japanese", "url": "https://www.pornhub.com/video/search?search=japanese", "id": "japanese"},
+        {"name": "Big Tits", "url": "https://www.pornhub.com/video/search?search=big+tits", "id": "big-tits"},
     ]
 
 
