@@ -181,6 +181,11 @@ def _extract_video_urls(html: str) -> dict[str, Any]:
     hls_match = re.search(r'html5player\.setVideoHLS\s*\(\s*[\'"](.+?)[\'"]\s*\)', html)
     if hls_match:
         hls_url = hls_match.group(1)
+        streams.append({
+            "quality": "adaptive",
+            "url": hls_url,
+            "format": "hls"
+        })
     
     # Method 4: Alternative - look for video URLs in player JSON config
     if not streams:
