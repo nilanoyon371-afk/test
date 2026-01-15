@@ -1,8 +1,0 @@
-﻿Testing segment playlist URL through proxy:
-======================================================================
-URL: https://test-production-8fbc.up.railway.app/api/hls/proxy?url=https%3A%2F%2Fvide...
-======================================================================
-
-Status: 400
-ERROR: 400
-Use /api/hls/playlist endpoint for M3U8 files
