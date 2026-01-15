@@ -24,10 +24,11 @@ async def fetch_html(url: str) -> str:
     # Try curl_cffi first (bypasses Cloudflare)
     try:
         async with AsyncSession(
-            impersonate="chrome120",
+            impersonate="safari15_3",
             headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Referer": "https://spankbang.com/",
                 "Cookie": "age_verified=1; sb_theme=dark",
             },
             timeout=20.0
