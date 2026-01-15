@@ -330,12 +330,12 @@ def _extract_video_streams(html: str) -> dict[str, Any]:
     if hls_match:
         hls_url = hls_match.group(1)
     
-    # Determine default stream (prefer highest quality)
+    # Determine default stream (prefer HLS, then highest quality)
     default_url = None
-    if streams:
-        default_url = streams[0]["url"]  # First stream is highest quality
-    elif hls_url:
+    if hls_url:
         default_url = hls_url
+    elif streams:
+        default_url = streams[0]["url"]  # First stream is highest quality
     
     return {
         "streams": streams,
