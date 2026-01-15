@@ -538,6 +538,16 @@ async def get_youporn_categories() -> list[CategoryItem]:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
 
 
+@app.get("/pornhub/categories", response_model=list[CategoryItem])
+async def get_pornhub_categories() -> list[CategoryItem]:
+    """Get list of Pornhub categories"""
+    try:
+        categories = pornhub.get_categories()
+        return [CategoryItem(**cat) for cat in categories]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
+
+
 @app.get("/redtube/categories", response_model=list[CategoryItem])
 async def get_redtube_categories() -> list[CategoryItem]:
     """Get list of RedTube categories"""
