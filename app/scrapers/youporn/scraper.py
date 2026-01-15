@@ -36,66 +36,106 @@ async def fetch_html(url: str) -> str:
         resp.raise_for_status()
         return resp.text
 
+async def _resolve_proxy_url(proxy_url: str) -> list[dict]:
+    """
+    Resolve a YouPorn proxy URL (e.g., /media/mp4/?s=...) to actual CDN streams.
+    Returns a list of stream objects with quality, url, format.
+    """
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json",
+        }
+        async with httpx.AsyncClient(headers=headers, timeout=10.0, follow_redirects=True) as client:
+            resp = await client.get(proxy_url)
+            if resp.status_code != 200:
+                return []
+            
+            data = resp.json()
+            if isinstance(data, list):
+                streams = []
+                for item in data:
+                    quality = item.get("quality")
+                    video_url = item.get("videoUrl")
+                    fmt = item.get("format", "mp4")
+                    
+                    if video_url:
+                        # Convert quality to string
+                        if isinstance(quality, int):
+                            quality = str(quality)
+                        
+                        streams.append({
+                            "quality": quality if quality else "unknown",
+                            "url": video_url,
+                            "format": fmt
+                        })
+                return streams
+    except Exception:
+        pass
+    
+    return []
+
 def _extract_video_streams(html: str) -> dict[str, Any]:
     streams = []
     hls_url = None
     
-    # YouPorn often puts data in 'page_params' or similar var
-    # Look for mediaDefinitions
-    # var page_params = {... "mediaDefinitions": [...] ...};
+    # Find mediaDefinitions in HTML and extract the array efficiently
+    media_defs = []
+    idx = html.find('mediaDefinitions')
+    if idx != -1:
+        # Find the opening bracket after mediaDefinitions
+        chunk_start = idx
+        chunk = html[chunk_start:chunk_start + 10000]  # Limit search space
+        array_start_idx = chunk.find('[')
+        
+        if array_start_idx != -1:
+            # Count brackets to find the matching closing bracket
+            depth = 0
+            array_content = None
+            for i, char in enumerate(chunk[array_start_idx:], array_start_idx):
+                if char == '[':
+                    depth += 1
+                elif char == ']':
+                    depth -= 1
+                    if depth == 0:
+                        array_content = chunk[array_start_idx:i + 1]
+                        break
+            
+            if array_content:
+                try:
+                    media_defs = json.loads(array_content)
+                except Exception:
+                    pass
     
-    m = re.search(r'var\s+page_params\s*=\s*(\{.*?\});', html, re.DOTALL)
-    if not m:
-        # Fallback: look for mediaDefinitions directly in JSON
-        # Pattern: "mediaDefinitions":[...]
-        m = re.search(r'["\']?mediaDefinitions["\']?\s*:\s*(\[.*?\])', html, re.DOTALL)
-    
-    data = None
-    if m:
-        try:
-            raw = m.group(1)
-            # If it captured "var x = {...};", group 1 is "{...}"
-            # If fallback captured "[...]", group 1 is "[...]"
-            if raw.startswith("["):
-                 # It's just the list
-                 media_defs = json.loads(raw)
-            else:
-                 # It's the full object
-                 full_data = json.loads(raw)
-                 media_defs = full_data.get("mediaDefinitions", [])
-                 if not media_defs and "video" in full_data:
-                     # sometimes nested?
-                     media_defs = full_data["video"].get("mediaDefinitions", [])
-
-            for md in media_defs:
-                video_url = md.get("videoUrl")
-                if not video_url: continue
-                
-                # Skip poster/thumbnail images
-                if video_url.endswith('.jpg') or video_url.endswith('.jpeg') or video_url.endswith('.png'):
-                    continue
-                
-                fmt = md.get("format") # mp4, hls
-                quality = md.get("quality") # 720p, 1080p, etc
-                
-                if isinstance(quality, list): quality = str(quality[0])
-                
-                # Check format
-                if fmt == "hls" or ".m3u8" in video_url:
-                     hls_url = video_url
-                     streams.append({
-                        "quality": "adaptive",
-                        "url": video_url,
-                        "format": "hls"
-                    })
-                elif fmt == "mp4":
-                     streams.append({
-                        "quality": str(quality) if quality else "unknown",
-                        "url": video_url,
-                        "format": "mp4"
-                    })
-        except Exception:
-            pass
+    # Process mediaDefinitions
+    if media_defs:
+        for md in media_defs:
+            video_url = md.get("videoUrl")
+            if not video_url: continue
+            
+            # Skip poster/thumbnail images
+            if video_url.endswith('.jpg') or video_url.endswith('.jpeg') or video_url.endswith('.png'):
+                continue
+            
+            fmt = md.get("format") # mp4, hls
+            quality = md.get("quality") # 720p, 1080p, etc
+            
+            if isinstance(quality, list): quality = str(quality[0])
+            
+            # Check format
+            if fmt == "hls" or ".m3u8" in video_url:
+                 hls_url = video_url
+                 streams.append({
+                    "quality": "adaptive",
+                    "url": video_url,
+                    "format": "hls"
+                })
+            elif fmt == "mp4" or ".mp4" in video_url:
+                 streams.append({
+                    "quality": str(quality) if quality else "unknown",
+                    "url": video_url,
+                    "format": "mp4"
+                })
 
     # Generic fallback if no JSON found: check for <video> sources
     if not streams:
@@ -207,7 +247,40 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
 
 async def scrape(url: str) -> dict[str, Any]:
     html = await fetch_html(url)
-    return parse_page(html, url)
+    result = parse_page(html, url)
+    
+    # Check if we have proxy URLs and resolve them to real CDN streams
+    video_data = result.get("video", {})
+    streams = video_data.get("streams", [])
+    
+    # If any stream is a proxy URL, try to resolve it
+    for stream in streams[:]:  # Copy list to modify while iterating
+        stream_url = stream.get("url", "")
+        if "/media/" in stream_url and "?s=" in stream_url:
+            # This is a proxy URL - resolve it
+            resolved_streams = await _resolve_proxy_url(stream_url)
+            if resolved_streams:
+                # Remove the proxy stream
+                streams.remove(stream)
+                # Add all resolved streams
+                streams.extend(resolved_streams)
+    
+    # Update default URL based on resolved streams
+    if streams:
+        # Find HLS adaptive stream or highest quality MP4
+        hls_stream = next((s for s in streams if s.get("format") == "hls"), None)
+        if hls_stream:
+            video_data["default"] = hls_stream["url"]
+        else:
+            # Find highest quality MP4
+            mp4_streams = [s for s in streams if s.get("format") == "mp4"]
+            if mp4_streams:
+                # Sort by quality (try to get 1080, 720, etc.)
+                qualities = {"1080": 4, "720": 3, "480": 2, "240": 1}
+                mp4_streams.sort(key=lambda s: qualities.get(s.get("quality", ""), 0), reverse=True)
+                video_data["default"] = mp4_streams[0]["url"]
+    
+    return result
 
 async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dict[str, Any]]:
     # YouPorn pagination: /video?page=2 or /category/asian?page=2
