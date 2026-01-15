@@ -483,6 +483,15 @@ def _extract_video_data(html: str) -> dict[str, Any]:
     # Filter streams to keep ONLY 'hls' format
     streams = [s for s in streams if s.get("format") == "hls"]
 
+    # Deduplicate streams based on URL
+    unique_urls = set()
+    unique_streams = []
+    for s in streams:
+        if s["url"] not in unique_urls:
+            unique_urls.add(s["url"])
+            unique_streams.append(s)
+    streams = unique_streams
+
     streams.sort(key=quality_score, reverse=True)
     
     default_url = None
