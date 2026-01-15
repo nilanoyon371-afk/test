@@ -171,12 +171,8 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     
     for item in soup.select(container_selector):
         try:
-            # Title & Link
-            link = item.select_one("a.n, a.thumb") 
-            if not link:
-                # Fallback: any link with /video/
-                link = item.find("a", href=re.compile(r"/video/"))
-            
+            # Get the main link (usually a.thumb for thumbnail)
+            link = item.select_one("a")
             if not link: continue
             
             href = link.get("href")
@@ -184,10 +180,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
              
             if href.startswith("/"): href = "https://spankbang.com" + href
             
-            # Title might be in link title or text, or separate .n element if link is thumb
-            title_el = item.select_one(".n")
-            if title_el: title = title_el.get_text(strip=True)
-            else: title = link.get("title") or link.get_text(strip=True)
+            # Title: in span with text-secondary class (or fallback to .n)
+            title = "Unknown"
+            title_el = item.select_one("span.text-secondary.text-body-md, .n")
+            if title_el:
+                title = title_el.get_text(strip=True)
 
             # Thumbnail
             img = item.find("img")
@@ -196,26 +193,39 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 thumb = img.get("data-src") or img.get("src")
                 if thumb and thumb.startswith("//"): thumb = "https:" + thumb
                 
-            # Duration
+            # Duration: in data-testid="video-item-length"
             duration = "0:00"
-            dur_tag = item.select_one(".l, .t, .duration, div.absolute")
-            if dur_tag: duration = dur_tag.get_text(strip=True)
+            dur_tag = item.select_one('[data-testid="video-item-length"]')
+            if dur_tag: 
+                duration = dur_tag.get_text(strip=True)
             
-            # Views
+            # Views: Find span containing view count (has text-body-md class)
             views = "0"
-            view_tag = item.select_one(".v, .views, .stats")
-            if view_tag:
-                 txt = view_tag.get_text(strip=True)
-                 m = re.search(r'([\d\.kKdM]+)', txt)
-                 if m: views = m.group(1)
+            # Find spans and check for numeric content that looks like views (e.g., "11K", "2.5M")
+            for span in item.find_all("span"):
+                classes = span.get("class", [])
+                if any("text-body-md" in c for c in classes):
+                    txt = span.get_text(strip=True)
+                    # Check if it contains numbers and is short (likely views)
+                    if txt and any(c.isdigit() for c in txt) and len(txt) <= 10:
+                        m = re.search(r'([\d\.]+[KkMm]?)', txt)
+                        if m:
+                            views = m.group(1)
+                            break
+            
+            # Uploader: in span with text-action-tertiary class
+            uploader = "Unknown"
+            uploader_el = item.select_one("span.text-action-tertiary")
+            if uploader_el:
+                uploader = uploader_el.get_text(strip=True)
             
             items.append({
                 "url": href,
-                "title": title or "Unknown",
+                "title": title,
                 "thumbnail_url": thumb,
                 "duration": duration,
                 "views": views,
-                "uploader_name": "Unknown"
+                "uploader_name": uploader
             })
             
         except:
