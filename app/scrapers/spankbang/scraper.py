@@ -218,9 +218,31 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     items = []
     
     # Updated Selectors based on browser analysis
+    # Strategy: Find the container with the MOST video items to avoid "Featured" or "Trending" widgets
     container_selector = ".js-video-item, .video-item, .video-list-video"
+    selected_items = []
     
-    for item in soup.select(container_selector):
+    # 1. Try to find specific container lists first
+    media_lists = soup.select(".js-media-list")
+    if media_lists:
+        # Sort by number of video items inside
+        best_container = None
+        max_items = -1
+        
+        for c in media_lists:
+            count = len(c.select(container_selector))
+            if count > max_items:
+                max_items = count
+                best_container = c
+                
+        if best_container and max_items > 0:
+            selected_items = best_container.select(container_selector)
+    
+    # 2. Fallback: If no containers found (or empty), select from global soup
+    if notSelected_items:
+         selected_items = soup.select(container_selector)
+         
+    for item in selected_items:
         try:
             # Get the main link (usually a.thumb for thumbnail)
             link = item.select_one("a")
