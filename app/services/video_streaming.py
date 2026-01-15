@@ -24,7 +24,7 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
         }
     """
     # Import here to avoid circular dependency
-    from app.scrapers import xnxx, xhamster, xvideos, masa49
+    from app.scrapers import xnxx, xhamster, xvideos, masa49, pornhub
     from urllib.parse import urlparse
     
     # Parse URL to get host
@@ -43,6 +43,8 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
         scraper_module = xvideos
     elif masa49.can_handle(host):
         scraper_module = masa49
+    elif pornhub.can_handle(host):
+        scraper_module = pornhub
     else:
         raise HTTPException(
             status_code=400,
