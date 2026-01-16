@@ -231,15 +231,15 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
     from urllib.parse import urlparse
     parsed_url = urlparse(url)
     if "pornhub.com" in parsed_url.netloc.lower():
-        available_qualities = []
+        qualities = {}
         all_streams = video_data.get("streams", [])
         for s in all_streams:
             if s.get("format") == "hls":
-                available_qualities.append({
-                    "quality": s.get("quality", "unknown"),
-                    "url": s.get("url"),
-                    "format": "hls"
-                })
-        response["available_qualities"] = available_qualities
+                quality_label = s.get("quality", "unknown")
+                qualities[quality_label] = s.get("url")
+        
+        # Add qualities as flat fields in response
+        for quality_label, quality_url in qualities.items():
+            response[quality_label] = quality_url
             
     return response
