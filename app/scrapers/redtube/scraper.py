@@ -239,64 +239,9 @@ async def scrape(url: str) -> dict[str, Any]:
                 # Add all resolved streams
                 streams.extend(resolved_streams)
     
-    # Post-processing: Construct HLS Master Playlist if multiple HLS streams exist
-    hls_streams = [s for s in streams if s.get("format") == "hls" and "videoUrl" not in s] # Filter simplistic check, actually rely on format
-    # Refine: check for RDTCdn HLS streams that strictly match the pattern
-    rdt_hls = []
-    for s in streams:
-        if s.get("format") == "hls" and "/hls/videos/" in s.get("url", "") and ".mp4/" in s.get("url", ""):
-            rdt_hls.append(s)
-            
-    if rdt_hls:
-        try:
-            # Group by base structure to ensure we are combining same video's segments
-            # URl: https://ev-h-ph.rdtcdn.com/.../VIDEOID/SEGMENT.mp4/master.m3u8?params
-            
-            # We assume all rdt_hls belong to the same video if we are scraping one page.
-            # But let's be safe and take the first one's base.
-            first_url = rdt_hls[0]["url"]
-            parts = first_url.split('/')
-            # Check structure: .../VID/SEG/master.m3u8
-            if len(parts) >= 3 and "master.m3u8" in parts[-1] and ".mp4" in parts[-2]:
-                base_url = "/".join(parts[:-2]) + "/"
-                params = ""
-                if "?" in parts[-1]:
-                    params = parts[-1].split("?")[1]
-                
-                segments = []
-                # Collect all segments from all compatible HLS streams
-                seen_segments = set()
-                for s in rdt_hls:
-                    p = s["url"].split('/')
-                    if len(p) >= 3:
-                        seg = p[-2] # The 720P...mp4 part
-                        if seg not in seen_segments:
-                            segments.append(seg)
-                            seen_segments.add(seg)
-                
-                if segments:
-                    # Construct Master URL
-                    # Format: BASE,seg1,seg2,seg3,.urlset/master.m3u8?params
-                    joined = ",".join(segments)
-                    master_url = f"{base_url},{joined},.urlset/master.m3u8"
-                    if params:
-                        master_url += f"?{params}"
-                        
-                    # Add master stream
-                    streams.append({
-                        "quality": "m3u8", # "All in one"
-                        "url": master_url,
-                        "format": "hls"
-                    })
-                    
-                    # Update default to master if available
-                    for s in streams:
-                        if s["url"] == master_url:
-                            result["video"]["default"] = master_url
-                            
-        except Exception as e:
-            # print(f"Master construction failed: {e}")
-            pass
+    # Post-processing: Construct HLS Master Playlist if multiple HLS streams exist - REMOVED per user request
+    pass
+
     
     # Update default URL based on resolved streams (Legacy logic, just in case master const failed)
     if streams and "default" not in result.get("video", {}) or result["video"].get("default") is None:

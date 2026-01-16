@@ -91,10 +91,6 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
                 if ".m3u8" in stream_url or "media=hls" in stream_url:
                     should_proxy = True
                     referer = "https://beeg.com/"
-            elif "rdtcdn.com" in stream_url:
-                # RedTube HLS: No Referer, and specific UA
-                should_proxy = True
-                referer = "" 
                 
             if should_proxy:
                 encoded_url = quote(stream_url)
@@ -103,9 +99,7 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
                 base = api_base_url if api_base_url else "http://localhost:8000"
                 
                 proxy_url = f"{base}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
-                if "rdtcdn.com" in stream_url:
-                    # Force a safe User-Agent for RedTube (browser UA gets 403)
-                    proxy_url += f"&user_agent={quote('OkHttp/4.9.3')}"
+                # RedTube user_agent logic removed
                     
                 return proxy_url
             return stream_url
@@ -204,9 +198,6 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         if "externulls.com" in stream_url or "beeg.com" in stream_url:
              should_proxy = True
              referer = "https://beeg.com/"
-        elif "rdtcdn.com" in stream_url:
-             should_proxy = True
-             referer = "" # No Referer for RedTube HLS
              
         if should_proxy:
             from urllib.parse import quote
@@ -220,9 +211,7 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
             encoded_referer = quote(referer)
             
             stream_url = f"{api_base_url}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
-            if "rdtcdn.com" in stream_url:
-                # Force a safe User-Agent for RedTube (OkHttp mimics app traffic, less likely to be blocked on cloud)
-                stream_url += f"&user_agent={quote('OkHttp/4.9.3')}"
+            # RedTube user_agent logic removed
             
     return {
         "stream_url": stream_url,
