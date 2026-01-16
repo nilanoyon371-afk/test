@@ -128,7 +128,26 @@ def _extract_video_streams(html: str) -> dict[str, Any]:
                 
                 # Adjust quality and format for HLS
                 if fmt == "hls" or ".m3u8" in video_url:
-                    stream["quality"] = "adaptive"
+                    # Extract quality from metadata or URL
+                    parsed_quality = "adaptive"
+                    
+                    if quality:
+                        if isinstance(quality, str) and quality.isdigit():
+                             parsed_quality = f"{quality}p"
+                        else:
+                             parsed_quality = str(quality)
+                    
+                    # Try regex on URL if quality is not specific
+                    if not parsed_quality or parsed_quality == "adaptive":
+                        # Try finding /1080P/ or similar patterns
+                        m_q = re.search(r'/(\d{3,4})[pP]?/', video_url)
+                        if not m_q:
+                             m_q = re.search(r'(\d{3,4})[pP]_', video_url)
+                             
+                        if m_q:
+                            parsed_quality = f"{m_q.group(1)}p"
+                    
+                    stream["quality"] = parsed_quality
                     stream["format"] = "hls"
                     if not is_proxy:
                         hls_url = stream["url"]
@@ -241,13 +260,7 @@ async def scrape(url: str) -> dict[str, Any]:
     
     # Post-processing: Construct HLS Master Playlist if multiple HLS streams exist - REMOVED per user request
     pass
-
     
-    # Smarter/Shorter: If we have direct MP4 streams, filter out the raw HLS streams 
-    # (which are less compatible/require headers) to keep the list clean.
-    mp4_streams = [s for s in streams if s.get("format") == "mp4"]
-    if mp4_streams:
-        streams = mp4_streams
         
     # Rearrange: Sort strictly by numeric quality descending
     def get_quality_val(s):

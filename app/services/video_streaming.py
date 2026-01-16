@@ -175,7 +175,12 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         streams = video_data.get("streams", [])
         for s in streams:
             if s.get("url") == stream_url:
-                selected_quality = s.get("quality", "default")
+                found_quality = s.get("quality", "default")
+                # Normalize quality: add 'p' suffix if missing
+                if found_quality and found_quality.isdigit():
+                    selected_quality = f"{found_quality}p"
+                else:
+                    selected_quality = found_quality
                 break
     else:
         # Find matching quality
@@ -227,12 +232,22 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         "format": fmt
     }
     
-    # Add available_qualities for Pornhub and YouPorn only
+    # Add available_qualities for Pornhub, YouPorn, and RedTube
     from urllib.parse import urlparse
     parsed_url = urlparse(url)
-    if "pornhub.com" in parsed_url.netloc.lower() or "youporn.com" in parsed_url.netloc.lower():
+    if ("pornhub.com" in parsed_url.netloc.lower() or 
+        "youporn.com" in parsed_url.netloc.lower() or
+        "redtube.com" in parsed_url.netloc.lower() or
+        "redtube.net" in parsed_url.netloc.lower()):
         qualities = {}
         all_streams = video_data.get("streams", [])
+        
+        # Debug logging for RedTube
+        if "redtube.com" in parsed_url.netloc.lower():
+            logger.info(f"RedTube: Found {len(all_streams)} total streams")
+            for idx, s in enumerate(all_streams):
+                logger.info(f"  Stream {idx}: format={s.get('format')}, quality={s.get('quality')}, url={s.get('url')[:60]}...")
+        
         for s in all_streams:
             if s.get("format") == "hls":
                 quality_label = s.get("quality", "unknown")
@@ -245,6 +260,9 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
                     pass
                     
                 qualities[quality_label] = s.get("url")
+        
+        if "redtube.com" in parsed_url.netloc.lower():
+            logger.info(f"RedTube: Found {len(qualities)} HLS quality streams")
         
         # Add qualities as flat fields in response
         for quality_label, quality_url in qualities.items():
