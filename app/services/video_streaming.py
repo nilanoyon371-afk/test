@@ -84,13 +84,23 @@ async def get_video_info(url: str, api_base_url: str = "http://localhost:8000") 
         
         # Helper to wrap URL
         def proxy_wrap(stream_url):
+            should_proxy = False
+            referer = ""
+            
             if "externulls.com" in stream_url or "beeg.com" in stream_url:
                 if ".m3u8" in stream_url or "media=hls" in stream_url:
-                    encoded_url = quote(stream_url)
-                    encoded_referer = quote("https://beeg.com/")
-                    # Ensure api_base_url is valid
-                    base = api_base_url if api_base_url else "http://localhost:8000"
-                    return f"{base}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
+                    should_proxy = True
+                    referer = "https://beeg.com/"
+            elif "rdtcdn.com" in stream_url and ".m3u8" in stream_url:
+                should_proxy = True
+                referer = "https://www.redtube.com/"
+                
+            if should_proxy:
+                encoded_url = quote(stream_url)
+                encoded_referer = quote(referer)
+                # Ensure api_base_url is valid
+                base = api_base_url if api_base_url else "http://localhost:8000"
+                return f"{base}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
             return stream_url
 
         # Wrap extracted streams
@@ -180,8 +190,18 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         if selected_quality == "default":
             selected_quality = "adaptive"
             
-        # PROXY WRAPPER FOR BEEG (and potentially others needing headers)
+        # PROXY WRAPPER FOR BEEG and RedTube
+        should_proxy = False
+        referer = ""
+        
         if "externulls.com" in stream_url or "beeg.com" in stream_url:
+             should_proxy = True
+             referer = "https://beeg.com/"
+        elif "rdtcdn.com" in stream_url:
+             should_proxy = True
+             referer = "https://www.redtube.com/"
+             
+        if should_proxy:
             from urllib.parse import quote
             # Construct proxy URL
             # api_base_url comes from get_video_info caller
@@ -190,8 +210,7 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
                 api_base_url = "http://localhost:8000" # fallback
                 
             encoded_url = quote(stream_url)
-            # Beeg typically needs Referer: https://beeg.com/
-            encoded_referer = quote("https://beeg.com/")
+            encoded_referer = quote(referer)
             
             stream_url = f"{api_base_url}/api/v1/hls/proxy?url={encoded_url}&referer={encoded_referer}"
             
