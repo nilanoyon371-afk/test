@@ -255,12 +255,24 @@ async def scrape(url: str) -> dict[str, Any]:
             result["video"]["default"] = hls_stream["url"]
         else:
             # Find highest quality MP4
+            # Find highest quality MP4 (prioritize over HLS if master is disabled/missing)
             mp4_streams = [s for s in streams if s.get("format") == "mp4"]
+            
+            # Helper to extract numeric quality
+            def get_quality_val(s):
+                q = s.get("quality", "")
+                if not q: return 0
+                # Extract digits: "720P" -> 720
+                digits = "".join(filter(str.isdigit, str(q)))
+                return int(digits) if digits else 0
+
             if mp4_streams:
-                # Sort by quality (try to get 1080, 720, etc.)
-                qualities = {"1080": 4, "720": 3, "480": 2, "240": 1}
-                mp4_streams.sort(key=lambda s: qualities.get(s.get("quality", ""), 0), reverse=True)
+                # Sort by numeric quality descending
+                mp4_streams.sort(key=get_quality_val, reverse=True)
                 result["video"]["default"] = mp4_streams[0]["url"]
+            elif hls_stream:
+                 # Fallback to single HLS if no MP4
+                 result["video"]["default"] = hls_stream["url"]
     
     return result
 
