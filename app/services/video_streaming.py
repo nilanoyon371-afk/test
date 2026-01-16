@@ -236,6 +236,14 @@ async def get_stream_url(url: str, quality: str = "default", api_base_url: str =
         for s in all_streams:
             if s.get("format") == "hls":
                 quality_label = s.get("quality", "unknown")
+                
+                # Normalize quality label: ensure it has 'p' suffix (e.g., "720" -> "720p")
+                if quality_label and quality_label.isdigit():
+                    quality_label = f"{quality_label}p"
+                elif quality_label and not quality_label.endswith('p') and quality_label[:-1].isdigit():
+                    # Already has some suffix, keep as is
+                    pass
+                    
                 qualities[quality_label] = s.get("url")
         
         # Add qualities as flat fields in response
