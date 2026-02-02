@@ -579,3 +579,35 @@ async def get_spankbang_categories() -> list[CategoryItem]:
         return [CategoryItem(**cat) for cat in categories]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
+
+
+# ===== AppHub Version/Update Endpoint =====
+
+from app import apphub_version
+
+@app.get("/api/apphub/version")
+async def get_apphub_version():
+    """
+    Get latest AppHub version information for in-app updates
+    
+    Returns version, build number, download URL, changelog, and update settings.
+    Used by the AppHub app to check for available updates.
+    
+    Example response:
+        {
+            "version": "1.0.0",
+            "buildNumber": 1,
+            "downloadUrl": "https://milonhossain.online/apphub/download/apphub-v1.0.0.apk",
+            "changelog": "- Initial release...",
+            "isMandatory": false,
+            "sizeBytes": 45000000
+        }
+    """
+    return {
+        "version": apphub_version.VERSION,
+        "buildNumber": apphub_version.BUILD_NUMBER,
+        "downloadUrl": apphub_version.DOWNLOAD_URL,
+        "changelog": apphub_version.CHANGELOG.strip(),
+        "isMandatory": apphub_version.IS_MANDATORY,
+        "sizeBytes": apphub_version.SIZE_BYTES,
+    }
