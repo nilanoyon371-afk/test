@@ -3,7 +3,7 @@
 
 VERSION = "2.0.0"
 BUILD_NUMBER = 2
-DOWNLOAD_URL = "https://milonhossain.online/apphub/download/apphub-v2.0.0.apk"
+DOWNLOAD_URL = "https://apphubx.netlify.app/assets/app-arm64-v8a-release.apk"
 CHANGELOG = """🎉 What's New in v2.0.0
 
 ✨ Major Features
