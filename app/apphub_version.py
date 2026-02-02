@@ -1,8 +1,8 @@
 # AppHub Version Configuration
 # Update this file when you release a new version of AppHub
 
-VERSION = "1.0.0"
-BUILD_NUMBER = 1
+VERSION = "2.0.0"
+BUILD_NUMBER = 2
 DOWNLOAD_URL = "https://milonhossain.online/apphub/download/apphub-v1.0.0.apk"
 CHANGELOG = """
 - Initial release of AppHub
