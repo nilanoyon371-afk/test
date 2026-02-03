@@ -608,6 +608,7 @@ async def get_apphub_version():
         "buildNumber": apphub_version.BUILD_NUMBER,
         "downloadUrl": apphub_version.DOWNLOAD_URL,
         "changelog": apphub_version.CHANGELOG.strip(),
+        "changelogTitle": apphub_version.CHANGELOG_TITLE,
         "isMandatory": apphub_version.IS_MANDATORY,
         "sizeBytes": apphub_version.SIZE_BYTES,
     }
