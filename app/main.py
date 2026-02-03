@@ -15,6 +15,7 @@ import logging
 
 # Zero-cost optimizations from app.core
 from app.core import cache, cache_cleanup, pool, fetch_html, rate_limit_middleware, rate_limit_cleanup
+from app.core.database import init_db, close_db
 
 logging.basicConfig(level=logging.INFO)
 
@@ -41,6 +42,10 @@ app.middleware("http")(rate_limit_middleware)
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on startup"""
+    # Initialize Database
+    await init_db()
+    logging.info("✅ Database initialized")
+    
     # Start cache cleanup task
     asyncio.create_task(cache_cleanup())
     # Start rate limiter cleanup task
@@ -52,6 +57,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
+    # Close Database
+    await close_db()
+    logging.info("✅ Database connection closed")
+    
     # Close HTTP connection pool
     await pool.close()
     logging.info("✅ Closed HTTP connection pool")
