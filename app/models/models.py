@@ -23,6 +23,9 @@ class User(Base):
     # API Key
     api_key: Mapped[Optional[str]] = mapped_column(String(64), unique=True, index=True, nullable=True)
     
+    # Guest Login
+    device_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True, nullable=True)
+    
     # Role and Status
     role: Mapped[str] = mapped_column(String(20), default="user")  # admin, user, guest
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
