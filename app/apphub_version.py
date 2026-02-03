@@ -4,9 +4,8 @@
 VERSION = "2.0.0"
 BUILD_NUMBER = 2
 DOWNLOAD_URL = "https://apphubx.netlify.app/assets/app-arm64-v8a-release.apk"
-CHANGELOG_TITLE = "What's Changed"
-CHANGELOG = """🎉 What's New in v2.0.0
-
+CHANGELOG_TITLE = "🎉 What's New in v2.0.0"
+CHANGELOG = """
 ✨ Major Features
 • Intelligent in-app update system with automatic version checking
 • Beautiful glassmorphic UI with smooth animations
