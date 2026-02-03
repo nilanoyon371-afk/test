@@ -43,6 +43,8 @@ app.middleware("http")(rate_limit_middleware)
 async def startup_event():
     """Start background tasks on startup"""
     # Initialize Database
+    from app.models.models import Base
+    logging.info(f"📋 Tables to create: {list(Base.metadata.tables.keys())}")
     await init_db()
     logging.info("✅ Database initialized")
     
