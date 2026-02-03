@@ -1,10 +1,10 @@
 # AppHub Version Configuration
 # Update this file when you release a new version of AppHub
 
-VERSION = "2.0.0+2"
+VERSION = "2.0.0"
 BUILD_NUMBER = 2
 DOWNLOAD_URL = "https://apphubx.netlify.app/assets/app-arm64-v8a-release.apk"
-CHANGELOG_TITLE = "🎉 What's New in v2.0.0+2"
+CHANGELOG_TITLE = "🎉 What's New in v2.0.0"
 CHANGELOG = """
 ✨ Major Features
 • Intelligent in-app update system with automatic version checking
@@ -27,5 +27,5 @@ CHANGELOG = """
 • Streamlined download notifications
 • Polished UI transitions and interactions
 """
-IS_MANDATORY = True
+IS_MANDATORY = False
 SIZE_BYTES = 45000000  # ~45 MB
