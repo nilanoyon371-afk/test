@@ -27,5 +27,5 @@ CHANGELOG = """🎉 What's New in v2.0.0
 • Streamlined download notifications
 • Polished UI transitions and interactions
 """
-IS_MANDATORY = False
+IS_MANDATORY = True
 SIZE_BYTES = 45000000  # ~45 MB
