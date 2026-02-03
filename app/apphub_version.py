@@ -1,10 +1,10 @@
 # AppHub Version Configuration
 # Update this file when you release a new version of AppHub
 
-VERSION = "3.0.0"
-BUILD_NUMBER = 3
+VERSION = "2.0.0+2"
+BUILD_NUMBER = 2
 DOWNLOAD_URL = "https://apphubx.netlify.app/assets/app-arm64-v8a-release.apk"
-CHANGELOG_TITLE = "🎉 What's New in v3.0.0"
+CHANGELOG_TITLE = "🎉 What's New in v2.0.0+2"
 CHANGELOG = """
 ✨ Major Features
 • Intelligent in-app update system with automatic version checking
