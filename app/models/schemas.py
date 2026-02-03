@@ -36,6 +36,11 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
