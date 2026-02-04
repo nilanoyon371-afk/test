@@ -221,7 +221,7 @@ async def global_trending(
         'pornhub': (pornhub, "https://www.pornhub.com/video?o=ht"),
         'youporn': (youporn, "https://www.youporn.com/top-rated/"),
         'redtube': (redtube, "https://www.redtube.com/top"),
-        'beeg': (beeg, "https://beeg.com/section/asian"), # Beeg has no general 'trending', checking asian as placeholder or main
+        'beeg': (beeg, "https://beeg.com/asian"), # Beeg has no general 'trending', checking asian as placeholder or main
         'spankbang': (spankbang, "https://spankbang.com/trending_videos")
     }
     
