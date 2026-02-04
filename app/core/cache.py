@@ -1,5 +1,6 @@
 """
-Smart Cache: Uses Redis in production, falls back to in-memory cache
+In-Memory Cache with TTL (Zero Cost - No Redis Needed)
+Provides LRU eviction and automatic expiration
 """
 
 from collections import OrderedDict
@@ -7,13 +8,6 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 import asyncio
 import logging
-import os
-
-try:
-    from app.core.redis_cache import redis_cache
-    REDIS_AVAILABLE = True
-except ImportError:
-    REDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -168,52 +162,7 @@ class SimpleCache:
 
 
 # Global cache instance
-memory_cache = SimpleCache(max_size=50000)
-
-
-class SmartCache:
-    """Uses Redis in production, falls back to in-memory cache"""
-    
-    def __init__(self):
-        self.use_redis = REDIS_AVAILABLE and os.getenv("REDIS_URL") is not None
-        self.backend = redis_cache if self.use_redis else memory_cache
-        logger.info(f"Cache backend: {'Redis' if self.use_redis else 'In-Memory'}")
-    
-    async def set(self, key: str, value: Any, ttl_seconds: int = 3600):
-        await self.backend.set(key, value, ttl_seconds)
-    
-    async def get(self, key: str) -> Optional[Any]:
-        return await self.backend.get(key)
-    
-    async def delete(self, key: str):
-        await self.backend.delete(key)
-    
-    async def clear(self):
-        await self.backend.clear()
-    
-    def get_stats(self) -> dict:
-        stats = self.backend.get_stats()
-        stats["backend"] = "redis" if self.use_redis else "memory"
-        return stats
-    
-    async def get_or_set(
-        self, 
-        key: str, 
-        factory, 
-        ttl_seconds: int = 3600
-    ) -> Any:
-        """Get from cache or compute and cache"""
-        value = await self.get(key)
-        if value is not None:
-            return value
-        
-        value = await factory() if asyncio.iscoroutinefunction(factory) else factory()
-        await self.set(key, value, ttl_seconds)
-        return value
-
-
-# Global smart cache instance
-cache = SmartCache()
+cache = SimpleCache(max_size=50000)
 
 
 # Background task to cleanup expired entries
