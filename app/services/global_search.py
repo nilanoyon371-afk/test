@@ -55,7 +55,7 @@ async def global_search(
     start_time = time()
     
     # Import scraper modules
-    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn, redtube, beeg, spankbang, xinbake
+    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn, redtube, beeg, spankbang
     
     # Build scraper registry (until we have real registry)
     available_scrapers = {
@@ -67,8 +67,7 @@ async def global_search(
         'youporn': youporn,
         'redtube': redtube,
         'beeg': beeg,
-        'spankbang': spankbang,
-        'xinbake': xinbake
+        'spankbang': spankbang
     }
     
     # Determine which sites to search
@@ -158,8 +157,7 @@ def _build_search_url(site_name: str, query: str, scraper_module) -> str:
         "youporn": f"https://www.youporn.com/search/?query={query_encoded}",
         "redtube": f"https://www.redtube.com/?search={query_encoded}",
         "beeg": f"https://beeg.com/?f={query_encoded}",
-        "spankbang": f"https://spankbang.com/s/{query_encoded}/",
-        "xinbake": f"https://noihjnkjhkjhiusydauytfer.vip/search?q={query_encoded}"
+        "spankbang": f"https://spankbang.com/s/{query_encoded}/"
     }
     
     return search_patterns.get(site_name)
@@ -213,7 +211,7 @@ async def global_trending(
     
     Similar to global search but uses trending pages
     """
-    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn, redtube, beeg, spankbang, xinbake
+    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn, redtube, beeg, spankbang
     
     available_scrapers = {
         'xhamster': (xhamster, "https://xhamster.com/trending"),
@@ -224,8 +222,7 @@ async def global_trending(
         'youporn': (youporn, "https://www.youporn.com/top-rated/"),
         'redtube': (redtube, "https://www.redtube.com/top"),
         'beeg': (beeg, "https://beeg.com/asian"),
-        'spankbang': (spankbang, "https://spankbang.com/trending_videos"),
-        'xinbake': (xinbake, "https://noihjnkjhkjhiusydauytfer.vip/movie")
+        'spankbang': (spankbang, "https://spankbang.com/trending_videos")
     }
     
     if not sites:

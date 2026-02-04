@@ -8,7 +8,7 @@ from pydantic import BaseModel, HttpUrl, field_validator
 from typing import Any, Optional
 
 # Scrapers from app package
-from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang, xinbake
+from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang
 import json
 import os
 import asyncio
@@ -153,8 +153,6 @@ async def _scrape_dispatch(url: str, host: str) -> dict[str, object]:
         return await beeg.scrape(url)
     if spankbang.can_handle(host):
         return await spankbang.scrape(url)
-    if xinbake.can_handle(host):
-        return await xinbake.scrape(url)
     raise HTTPException(status_code=400, detail="Unsupported host")
 
 
@@ -177,8 +175,6 @@ async def _list_dispatch(base_url: str, host: str, page: int, limit: int) -> lis
         return await beeg.list_videos(base_url=base_url, page=page, limit=limit)
     if spankbang.can_handle(host):
         return await spankbang.list_videos(base_url=base_url, page=page, limit=limit)
-    if xinbake.can_handle(host):
-        return await xinbake.list_videos(base_url=base_url, page=page, limit=limit)
     raise HTTPException(status_code=400, detail="Unsupported host")
 
 
