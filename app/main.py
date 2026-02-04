@@ -8,7 +8,7 @@ from pydantic import BaseModel, HttpUrl, field_validator
 from typing import Any, Optional
 
 # Scrapers from app package
-from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang
+from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang, xinbake
 import json
 import os
 import asyncio
