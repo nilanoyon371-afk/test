@@ -1,0 +1,52 @@
+# Environment Variables - NEVER COMMIT!
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+scraper_v2.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary
+*.tmp
+*.bak
+temp/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
