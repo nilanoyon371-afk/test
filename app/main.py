@@ -17,6 +17,11 @@ import logging
 # Zero-cost optimizations from app.core
 from app.core import cache, cache_cleanup, pool, fetch_html, rate_limit_middleware, rate_limit_cleanup
 
+# Exception handlers
+from app.exception_handlers import not_found_handler, internal_error_handler, general_exception_handler
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 logging.basicConfig(level=logging.INFO)
 
 # Lifespan context manager for startup/shutdown
@@ -42,6 +47,12 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan
 )
+
+# Register exception handlers
+app.add_exception_handler(404, not_found_handler)
+app.add_exception_handler(500, internal_error_handler)
+app.add_exception_handler(StarletteHTTPException, general_exception_handler)
+app.add_exception_handler(HTTPException, general_exception_handler)
 
 # Add CORS middleware
 app.add_middleware(
