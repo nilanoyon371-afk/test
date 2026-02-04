@@ -385,9 +385,7 @@ async def global_trending_endpoint(
 
 from app.services.video_streaming import get_video_info, get_stream_url
 from app.api.endpoints import recommendations, hls # Import hls router
-from app.api import auth # Import auth router
 
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["AI Recommendations"])
 app.include_router(hls.router, prefix="/api/v1/hls", tags=["HLS Proxy"])
 
