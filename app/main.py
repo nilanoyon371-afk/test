@@ -17,6 +17,12 @@ import logging
 # Zero-cost optimizations from app.core
 from app.core import cache, cache_cleanup, pool, fetch_html, rate_limit_middleware, rate_limit_cleanup
 
+# Redis  
+try:
+    from app.core.redis_cache import redis_cache
+except ImportError:
+    redis_cache = None
+
 # Exception handlers
 from app.exception_handlers import not_found_handler, internal_error_handler, general_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -29,6 +35,10 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     """Manage application lifecycle"""
     # Startup
+    # Connect to Redis if available
+    if redis_cache:
+        await redis_cache.connect()
+    
     asyncio.create_task(cache_cleanup())
     asyncio.create_task(rate_limit_cleanup())
     logging.info("✅ Started background cleanup tasks")
@@ -37,6 +47,8 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
+    if redis_cache:
+        await redis_cache.close()
     await pool.close()
     logging.info("✅ Closed HTTP connection pool")
 

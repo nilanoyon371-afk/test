@@ -20,7 +20,7 @@ aiosqlite==0.20.0
 alembic==1.13.1
 
 # Caching & Queue
-redis==5.2.1
+redis[hiredis]==5.2.1  # Railway Redis support with async
 
 # Logging
 python-json-logger==3.2.1
