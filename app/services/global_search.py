@@ -156,7 +156,7 @@ def _build_search_url(site_name: str, query: str, scraper_module) -> str:
         "pornhub": f"https://www.pornhub.com/video/search?search={query_encoded}",
         "youporn": f"https://www.youporn.com/search/?query={query_encoded}",
         "redtube": f"https://www.redtube.com/?search={query_encoded}",
-        "beeg": f"https://beeg.com/{query_encoded}",
+        "beeg": f"https://beeg.com/?f={query_encoded}",
         "spankbang": f"https://spankbang.com/s/{query_encoded}/"
     }
     
