@@ -57,14 +57,20 @@ class ScrapeRequest(BaseModel):
     @classmethod
     def validate_domain(cls, v: HttpUrl) -> HttpUrl:
         host = (v.host or "").lower()
-        if (
-            host.endswith("xhamster.com")
-            or host.endswith("masa49.org")
-            or host.endswith("xnxx.com")
-            or host.endswith("xvideos.com")
-        ):
+        allowed_domains = [
+            "xhamster.com",
+            "masa49.org",
+            "xnxx.com",
+            "xvideos.com",
+            "pornhub.com",
+            "youporn.com",
+            "redtube.com",
+            "beeg.com",
+            "spankbang.com"
+        ]
+        if any(host.endswith(domain) for domain in allowed_domains):
             return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com and xvideos.com URLs are allowed")
+        raise ValueError(f"Only {', '.join(allowed_domains)} URLs are allowed")
 
 
 class ScrapeResponse(BaseModel):
@@ -98,14 +104,20 @@ class ListRequest(BaseModel):
     @classmethod
     def validate_domain(cls, v: HttpUrl) -> HttpUrl:
         host = (v.host or "").lower()
-        if (
-            host.endswith("xhamster.com")
-            or host.endswith("masa49.org")
-            or host.endswith("xnxx.com")
-            or host.endswith("xvideos.com")
-        ):
+        allowed_domains = [
+            "xhamster.com",
+            "masa49.org",
+            "xnxx.com",
+            "xvideos.com",
+            "pornhub.com",
+            "youporn.com",
+            "redtube.com",
+            "beeg.com",
+            "spankbang.com"
+        ]
+        if any(host.endswith(domain) for domain in allowed_domains):
             return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com and xvideos.com base_url are allowed")
+        raise ValueError(f"Only {', '.join(allowed_domains)} base_url are allowed")
 
 
 # ===== Job Schemas =====
