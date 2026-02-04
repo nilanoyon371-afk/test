@@ -148,7 +148,7 @@ def parse_page(html: str, url: str) -> dict[str, Any]:
                 duration = f"{h}:{m:02d}:{s:02d}"
             else:
                 duration = f"{m}:{s:02d}"
-        except:
+        except Exception:
             pass
             
     # Views

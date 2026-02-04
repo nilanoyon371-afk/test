@@ -70,7 +70,7 @@ async def scrape(url: str) -> dict[str, Any]:
     # Actually, if we use int(video_id), we strip leading zeros safe.
     try:
         api_id = str(int(video_id))
-    except:
+    except Exception:
         api_id = video_id
         
     api_url = f"https://store.externulls.com/facts/file/{api_id}"

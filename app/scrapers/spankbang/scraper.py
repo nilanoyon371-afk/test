@@ -91,7 +91,7 @@ def _extract_video_streams(html: str) -> dict[str, Any]:
             raw_data = m_data.group(1)
             try:
                 data = json.loads(raw_data)
-            except:
+            except Exception:
                 data = ast.literal_eval(raw_data)
 
             # print("DEBUG: stream_data keys:", list(data.keys()))
@@ -337,7 +337,7 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 "uploader_name": uploader
             })
             
-        except:
+        except Exception:
             continue
             
     return items

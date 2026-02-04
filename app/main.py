@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import httpx
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl, field_validator
@@ -18,11 +19,28 @@ from app.core import cache, cache_cleanup, pool, fetch_html, rate_limit_middlewa
 
 logging.basicConfig(level=logging.INFO)
 
+# Lifespan context manager for startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle"""
+    # Startup
+    asyncio.create_task(cache_cleanup())
+    asyncio.create_task(rate_limit_cleanup())
+    logging.info("✅ Started background cleanup tasks")
+    logging.info("✅ Zero-cost optimizations enabled")
+    
+    yield
+    
+    # Shutdown
+    await pool.close()
+    logging.info("✅ Closed HTTP connection pool")
+
 # Create FastAPI app
 app = FastAPI(
     title="Scraper API - Optimized Version",
     description="🚀 Zero-cost optimized scraper API with caching, connection pooling, and rate limiting",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -34,27 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add rate limiting middleware
 app.middleware("http")(rate_limit_middleware)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Start background tasks on startup"""
-    # Start cache cleanup task
-    asyncio.create_task(cache_cleanup())
-    # Start rate limiter cleanup task
-    asyncio.create_task(rate_limit_cleanup())
-    logging.info("✅ Started background cleanup tasks")
-    logging.info("✅ Zero-cost optimizations enabled")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    # Close HTTP connection pool
-    await pool.close()
-    logging.info("✅ Closed HTTP connection pool")
 
 
 class ScrapeRequest(BaseModel):
