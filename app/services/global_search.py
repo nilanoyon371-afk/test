@@ -176,7 +176,7 @@ async def _search_site(
     """
     try:
         # Check cache first (ZERO-COST OPTIMIZATION)
-        from simple_cache import cache
+        from app.core.cache import cache
         cache_key = f"search:{site_name}:{search_url}:{limit}"
         
         cached = await cache.get(cache_key)
@@ -211,7 +211,7 @@ async def global_trending(
     
     Similar to global search but uses trending pages
     """
-    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn
+    from app.scrapers import xhamster, xnxx, xvideos, masa49, pornhub, youporn, redtube, beeg, spankbang
     
     available_scrapers = {
         'xhamster': (xhamster, "https://xhamster.com/trending"),
