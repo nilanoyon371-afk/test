@@ -18,8 +18,17 @@ def _best_image_url(img: Any) -> Optional[str]:
     # Check common lazy-loading attributes in order of preference
     for attr in ("data-src", "data-original", "data-lazy", "data-image", "src"):
         value = img.get(attr)
-        if value and str(value).strip() and "data:image" not in str(value):
-            return str(value).strip()
+        if not value:
+            continue
+        url = str(value).strip()
+        if not url or "data:image" in url:
+            continue
+        # Skip video files - they cause 403 errors when used as thumbnails
+        url_lower = url.lower()
+        if any(url_lower.endswith(ext) or f'{ext}/' in url_lower or f'{ext}?' in url_lower 
+               for ext in ('.mp4', '.webm', '.m3u8', '.ts')):
+            continue
+        return url
     return None
 
 def get_categories() -> list[dict]:
