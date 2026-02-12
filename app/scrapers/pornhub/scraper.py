@@ -16,7 +16,9 @@ def _best_image_url(img: Any) -> Optional[str]:
     if img is None:
         return None
     # Check common lazy-loading attributes in order of preference
-    for attr in ("data-src", "data-original", "data-lazy", "data-image", "src"):
+    # Pornhub uses: data-mediumthumb, data-thumb_url, src
+    # Also check generic lazy-load attributes
+    for attr in ("data-mediumthumb", "data-thumb_url", "data-src", "data-original", "data-lazy", "data-image", "src"):
         value = img.get(attr)
         if value and str(value).strip() and "data:image" not in str(value):
             return str(value).strip()
