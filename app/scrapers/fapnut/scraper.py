@@ -99,8 +99,33 @@ async def list_videos(base_url: str = BASE_URL, page: int = 1, limit: int = 20) 
 
     url = base_url
     if page > 1:
-        # Check if base_url already has pagination
-        if "/page/" in base_url:
+        # Check if base_url is a search query
+        if "?s=" in base_url or "&s=" in base_url:
+            # WordPress search pagination: /page/X/?s=query
+            # Remove existing /page/X/ if present
+            clean_url = re.sub(r"/page/\d+/?", "", base_url)
+            
+            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+            parsed = urlparse(clean_url)
+            query_params = parse_qs(parsed.query)
+            
+            # Reconstruct URL with /page/X/ path before query
+            # Base domain + path (without query)
+            path = parsed.path.rstrip("/")
+            new_path = f"{path}/page/{page}/"
+            
+            # Re-add query params
+            new_query = urlencode(query_params, doseq=True)
+            
+            url = urlunparse((
+                parsed.scheme,
+                parsed.netloc,
+                new_path,
+                parsed.params,
+                new_query,
+                parsed.fragment
+            ))
+        elif "/page/" in base_url:
              # Already has page, might be tricky. Assume base_url is a category root.
              # Remove trailing slash
              url = base_url.rstrip("/")
