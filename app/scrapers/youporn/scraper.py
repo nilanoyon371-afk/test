@@ -17,9 +17,10 @@ def _best_image_url(img: Any) -> Optional[str]:
         return None
     
     # Check common lazy-loading attributes in order of preference
+    # Youporn uses: data-poster (primary image thumbnail)
     video_fallback = None  # Store first video URL as fallback
     
-    for attr in ("data-src", "data-original", "data-lazy", "data-image", "src", "data-mediabook"):
+    for attr in ("data-poster", "data-src", "data-original", "data-lazy", "data-image", "src", "data-mediabook"):
         value = img.get(attr)
         if not value:
             continue
