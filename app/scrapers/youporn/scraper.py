@@ -11,6 +11,17 @@ from bs4 import BeautifulSoup
 def can_handle(host: str) -> bool:
     return "youporn.com" in host.lower()
 
+def _best_image_url(img: Any) -> Optional[str]:
+    """Extract the best image URL from an img element, checking multiple lazy-load attributes."""
+    if img is None:
+        return None
+    # Check common lazy-loading attributes in order of preference
+    for attr in ("data-src", "data-original", "data-lazy", "data-image", "src"):
+        value = img.get(attr)
+        if value and str(value).strip() and "data:image" not in str(value):
+            return str(value).strip()
+    return None
+
 def get_categories() -> list[dict]:
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -341,9 +352,7 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 
             # Thumbnail
             img = link.select_one("img")
-            thumb = None
-            if img:
-                thumb = img.get("data-src") or img.get("src")
+            thumb = _best_image_url(img)
             
             # Title
             title_div = box.select_one(".video-title, .tm_video_title, .video-box-title")
