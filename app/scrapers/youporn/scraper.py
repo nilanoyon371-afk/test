@@ -313,13 +313,11 @@ async def scrape(url: str) -> dict[str, Any]:
     return result
 
 async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dict[str, Any]]:
-    # YouPorn pagination: /video?page=2 or /category/asian?page=2
-    # If base_url is root, likely need /video
+    # YouPorn pagination: homepage?page=2 or /category/asian?page=2
+    # Unlike Pornhub, YouPorn doesn't have a /video endpoint
     
     url = base_url.rstrip("/")
-    if url in ("https://www.youporn.com", "http://www.youporn.com"):
-        url = "https://www.youporn.com/video"
-        
+    
     if "?" in url:
         url += f"&page={page}"
     else:
@@ -337,60 +335,75 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
     # Selector: .video-box
     for box in soup.select(".video-box"):
         try:
-            # Check if it's a real video box
-            if "js-video-box" not in box.get("class", []):
-                 # sometimes ad?
-                 pass
-            
             link = box.select_one("a")
-            if not link: continue
+            if not link:
+                continue
+                
             href = link.get("href")
-            if not href: continue
-             
+            if not href:
+                continue
+              
+            # Make URL absolute
             if not href.startswith("http"):
                 href = "https://www.youporn.com" + href
                 
-            # Thumbnail
+            # Thumbnail - REQUIRED (skip if missing)
             img = link.select_one("img")
             thumb = _best_image_url(img)
+            if not thumb:
+                # Try to find img anywhere in the box as fallback
+                img = box.select_one("img")
+                thumb = _best_image_url(img)
             
-            # Title
-            title_div = box.select_one(".video-title, .tm_video_title, .video-box-title")
+            # Skip if no valid thumbnail found
+            if not thumb:
+                continue
+            
+            # Title - try multiple sources
             title = None
-            if title_div: title = title_div.get_text(strip=True)
-            if not title and link.get("title"): title = link.get("title")
-            if not title and img: title = img.get("alt")
+            title_div = box.select_one(".video-title, .tm_video_title, .video-box-title")
+            if title_div:
+                title = title_div.get_text(strip=True)
+            if not title:
+                title = link.get("title")
+            if not title and img:
+                title = img.get("alt")
             
             # Duration
-            dur_div = box.select_one(".duration, .tm_video_duration, .video-duration")
             duration = None
-            if dur_div: duration = dur_div.get_text(strip=True)
+            dur_div = box.select_one(".duration, .tm_video_duration, .video-duration")
+            if dur_div:
+                duration = dur_div.get_text(strip=True)
             
             # Views
             views = None
             # Info usually in .video-infos -> "X views"
-            # User provided: <span class="info-views">27</span>
             infos = box.select_one(".video-infos, .video-views, .tm_video_views, .info-views")
             if infos:
                 info_txt = infos.get_text(strip=True)
                 # Try simple number match if "views" text is missing
-                if info_txt.isdigit() or re.match(r'^[\d,KM\.]+$', info_txt):
+                if info_txt and (info_txt.replace(',', '').replace('.', '').replace('K', '').replace('M', '').isdigit() or 
+                                 re.match(r'^[\d,KM\.]+$', info_txt)):
                      views = info_txt
                 else:
                     m = re.search(r'([\d,KM\.]+)\s*views', info_txt, re.IGNORECASE)
-                    if m: views = m.group(1)
+                    if m:
+                        views = m.group(1)
             
             if not views:
                 # Fallback: Search in entire box text
-                m = re.search(r'([\d,KM\.]+)\s*views', box.get_text(), re.IGNORECASE)
-                if m: views = m.group(1)
+                box_text = box.get_text()
+                m = re.search(r'([\d,KM\.]+)\s*views', box_text, re.IGNORECASE)
+                if m:
+                    views = m.group(1)
             
             # Uploader
-            uploader = "YouPorn" # Default
-            # User provided: <a class="author-title-text " ...>banx66</a>
+            uploader = "YouPorn"  # Default
             submitter = box.select_one(".submitter, .video-uploaded-by, .author-title-text, .owner-name")
             if submitter:
-                uploader = submitter.get_text(strip=True).replace("Uploaded by:", "").strip()
+                uploader_text = submitter.get_text(strip=True)
+                if uploader_text:
+                    uploader = uploader_text.replace("Uploaded by:", "").strip()
 
             items.append({
                 "url": href,
@@ -400,7 +413,11 @@ async def list_videos(base_url: str, page: int = 1, limit: int = 20) -> list[dic
                 "views": views or "0",
                 "uploader_name": uploader,
             })
-        except Exception:
+        except Exception as e:
+            # Log the error but continue processing other videos
+            import logging
+            logging.debug(f"Failed to extract Youporn video from box: {e}")
             continue
+            
             
     return items
