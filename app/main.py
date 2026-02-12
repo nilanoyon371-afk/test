@@ -8,7 +8,7 @@ from pydantic import BaseModel, HttpUrl, field_validator
 from typing import Any, Optional
 
 # Scrapers from app package
-from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang
+from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang, fapnut
 import json
 import os
 import asyncio
@@ -83,9 +83,10 @@ class ScrapeRequest(BaseModel):
             or "redtube.com" in host
             or "beeg.com" in host
             or "spankbang.com" in host
+            or "fapnut.net" in host
         ):
             return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com, xvideos.com, pornhub.com, youporn.com, redtube.com, beeg.com and spankbang.com URLs are allowed")
+        raise ValueError("Only xhamster.com, masa49.org, xnxx.com, xvideos.com, pornhub.com, youporn.com, redtube.com, beeg.com, spankbang.com and fapnut.net URLs are allowed")
 
 
 class ScrapeResponse(BaseModel):
@@ -120,7 +121,8 @@ class ListItem(BaseModel):
 class CategoryItem(BaseModel):
     name: str
     url: str
-    video_count: int
+    video_count: int | None = None
+    thumbnail_url: str | None = None
 
 
 class ListRequest(BaseModel):
@@ -140,9 +142,10 @@ class ListRequest(BaseModel):
              or "redtube.com" in host
              or "beeg.com" in host
              or "spankbang.com" in host
+             or "fapnut.net" in host
         ):
             return v
-        raise ValueError("Only xhamster.com, masa49.org, xnxx.com, xvideos.com, pornhub.com, youporn.com, redtube.com, beeg.com and spankbang.com base_url are allowed")
+        raise ValueError("Only xhamster.com, masa49.org, xnxx.com, xvideos.com, pornhub.com, youporn.com, redtube.com, beeg.com, spankbang.com and fapnut.net base_url are allowed")
 
 
 async def _scrape_dispatch(url: str, host: str) -> dict[str, object]:
@@ -164,6 +167,8 @@ async def _scrape_dispatch(url: str, host: str) -> dict[str, object]:
         return await beeg.scrape(url)
     if spankbang.can_handle(host):
         return await spankbang.scrape(url)
+    if fapnut.can_handle(host):
+        return await fapnut.scrape(url)
     raise HTTPException(status_code=400, detail="Unsupported host")
 
 
@@ -186,6 +191,8 @@ async def _list_dispatch(base_url: str, host: str, page: int, limit: int) -> lis
         return await beeg.list_videos(base_url=base_url, page=page, limit=limit)
     if spankbang.can_handle(host):
         return await spankbang.list_videos(base_url=base_url, page=page, limit=limit)
+    if fapnut.can_handle(host):
+        return await fapnut.list_videos(base_url=base_url, page=page, limit=limit)
     raise HTTPException(status_code=400, detail="Unsupported host")
 
 
@@ -585,6 +592,16 @@ async def get_spankbang_categories() -> list[CategoryItem]:
     """Get list of SpankBang categories"""
     try:
         categories = spankbang.get_categories()
+        return [CategoryItem(**cat) for cat in categories]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
+
+
+@app.get("/onlyfans/categories", response_model=list[CategoryItem])
+async def get_fapnut_categories() -> list[CategoryItem]:
+    """Get list of OnlyFans (Fapnut) categories"""
+    try:
+        categories = await fapnut.get_categories()
         return [CategoryItem(**cat) for cat in categories]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load categories: {str(e)}")
