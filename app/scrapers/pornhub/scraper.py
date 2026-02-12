@@ -15,23 +15,36 @@ def _best_image_url(img: Any) -> Optional[str]:
     """Extract the best image URL from an img element, checking multiple lazy-load attributes."""
     if img is None:
         return None
+    
     # Check common lazy-loading attributes in order of preference
     # Pornhub uses: data-mediumthumb, data-thumb_url, src
     # Also check generic lazy-load attributes
-    for attr in ("data-mediumthumb", "data-thumb_url", "data-src", "data-original", "data-lazy", "data-image", "src"):
+    video_fallback = None  # Store first video URL as fallback
+    
+    for attr in ("data-mediumthumb", "data-thumb_url", "data-src", "data-original", "data-lazy", "data-image", "src", "data-mediabook"):
         value = img.get(attr)
         if not value:
             continue
         url = str(value).strip()
         if not url or "data:image" in url:
             continue
-        # Skip video files - they cause 403 errors when used as thumbnails
+        
+        # Check if it's a video file
         url_lower = url.lower()
-        if any(url_lower.endswith(ext) or f'{ext}/' in url_lower or f'{ext}?' in url_lower 
-               for ext in ('.mp4', '.webm', '.m3u8', '.ts')):
+        is_video = any(url_lower.endswith(ext) or f'{ext}/' in url_lower or f'{ext}?' in url_lower 
+                      for ext in ('.mp4', '.webm', '.m3u8', '.ts'))
+        
+        if is_video:
+            # Save as fallback but keep looking for image
+            if not video_fallback:
+                video_fallback = url
             continue
+        
+        # Found a valid image URL!
         return url
-    return None
+    
+    # If no image URL found, use video as fallback (better than null)
+    return video_fallback
 
 def get_categories() -> list[dict]:
     import os
