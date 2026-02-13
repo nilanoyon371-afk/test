@@ -26,6 +26,7 @@ class UserResponse(UserBase):
     role: str
     is_active: bool
     api_key: Optional[str] = None
+    device_id: Optional[str] = None
     daily_quota: int
     requests_today: int
     total_requests: int
@@ -46,6 +47,17 @@ class TokenResponse(BaseModel):
     refresh_token: Optional[str] = None
     token_type: str = "bearer"
     expires_in: int
+
+
+class GuestLoginRequest(BaseModel):
+    device_id: str = Field(..., description="Unique device identifier")
+    device_name: Optional[str] = None
+    firebase_uid: Optional[str] = None
+
+
+class GuestLoginResponse(BaseModel):
+    token: TokenResponse
+    user: UserResponse
 
 
 # ===== Scraping Schemas =====
