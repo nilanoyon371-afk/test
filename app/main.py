@@ -29,8 +29,7 @@ from fastapi import APIRouter
 
 # Scrapers & Models
 from app.scrapers import masa49, xhamster, xnxx, xvideos, pornhub, youporn, redtube, beeg, spankbang, fapnut
-from app.models.schemas import ScrapeResponse, ListItem, CategoryItem
-from app.main import ScrapeRequest, ListRequest # We need to redefine these or keep them
+from app.models.schemas import ScrapeResponse, ListItem, CategoryItem, ScrapeRequest, ListRequest
 
 logging.basicConfig(level=logging.INFO)
 

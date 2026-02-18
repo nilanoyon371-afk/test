@@ -120,6 +120,14 @@ class ListRequest(BaseModel):
         raise ValueError(f"Only {', '.join(allowed_domains)} base_url are allowed")
 
 
+# ===== Category Schemas =====
+
+class CategoryItem(BaseModel):
+    name: str
+    url: str
+    video_count: Optional[int] = 0
+
+
 # ===== Job Schemas =====
 
 class JobCreate(BaseModel):
