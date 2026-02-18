@@ -126,15 +126,31 @@ async def rate_limit_middleware(request: Request, call_next):
     if request.url.path in ["/health", "/metrics"]:
         return await call_next(request)
     
-    # Use IP address as identifier (or user API key if available)
-    identifier = request.client.host
+    # Use IP address as identifier
+    # Priority:
+    # 1. API Key (authenticated)
+    # 2. CF-Connecting-IP (Cloudflare)
+    # 3. X-Forwarded-For (Proxy)
+    # 4. Direct Client IP
     
-    # Check if API key is provided (higher limit)
     api_key = request.headers.get("X-API-Key")
     if api_key:
         identifier = f"key:{api_key}"
         limit = 1000  # Higher limit for authenticated users
     else:
+        # Try to get real IP from headers
+        forwarded = request.headers.get("X-Forwarded-For")
+        cf_ip = request.headers.get("CF-Connecting-IP")
+        
+        if cf_ip:
+            identifier = cf_ip
+        elif forwarded:
+            identifier = forwarded.split(",")[0].strip()
+        elif request.client:
+            identifier = request.client.host
+        else:
+            identifier = "unknown"
+            
         limit = 60  # Lower limit for unauthenticated
     
     # Check rate limit
