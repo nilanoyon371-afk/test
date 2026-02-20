@@ -81,6 +81,7 @@ class ScrapeResponse(BaseModel):
     duration: Optional[str] = None
     views: Optional[str] = None
     uploader_name: Optional[str] = None
+    uploader_avatar_url: Optional[str] = None
     category: Optional[str] = None
     tags: list[str] = []
     cached: bool = False  # Indicates if result came from cache
@@ -93,6 +94,7 @@ class ListItem(BaseModel):
     duration: Optional[str] = None
     views: Optional[str] = None
     uploader_name: Optional[str] = None
+    uploader_avatar_url: Optional[str] = None
     category: Optional[str] = None
     tags: list[str] = []
 
