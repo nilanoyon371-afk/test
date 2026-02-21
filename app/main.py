@@ -19,7 +19,7 @@ from app.core import cache, cache_cleanup, pool, rate_limit_middleware, rate_lim
 from app.exception_handlers import not_found_handler, internal_error_handler, general_exception_handler
 
 # API Routers
-from app.api.endpoints import recommendations, hls
+from app.api.endpoints import recommendations, hls, media
 # We will define new standardized routers here or import them if we moved them.
 # For this refactor, we will define them inline or in a new api module. 
 # To keep it clean, I will implement the Router structure within main.py for now, 
@@ -294,6 +294,7 @@ async def get_apphub_version():
 app.include_router(api_v1_router)
 app.include_router(recommendations.router, prefix="/api/v1/recommendations", tags=["AI Recommendations"])
 app.include_router(hls.router, prefix="/api/v1/hls", tags=["HLS Proxy"])
+app.include_router(media.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])
