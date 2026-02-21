@@ -62,7 +62,7 @@ DUMMY_MEDIA_CONFIG = MediaConfigData(
                     type="live",
                     icon="public_rounded",
                     color_hex="#00BCD4",
-                    playlist_url="https://free-tv.com/api/news.m3u",
+                    playlist_url="https://iptv-org.github.io/iptv/index.m3u",
                 ),
                 MediaCategoryResponse(
                     id="documentaries",
