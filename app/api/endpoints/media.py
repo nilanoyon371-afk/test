@@ -65,6 +65,14 @@ DUMMY_MEDIA_CONFIG = MediaConfigData(
                     playlist_url="https://iptv-org.github.io/iptv/index.m3u",
                 ),
                 MediaCategoryResponse(
+                    id="BD",
+                    title="Bangladesh",
+                    type="live",
+                    logo_url="https://upload.wikimedia.org/wikipedia/commons/f/f9/Flag_of_Bangladesh.svg",
+                    color_hex="#4CAF50",
+                    playlist_url="https://raw.githubusercontent.com/imShakil/tvlink/refs/heads/main/iptv.m3u8",
+                ),
+                MediaCategoryResponse(
                     id="documentaries",
                     title="Documentaries",
                     type="vod",

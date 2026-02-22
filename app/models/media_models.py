@@ -5,7 +5,8 @@ class MediaCategoryResponse(BaseModel):
     id: str
     title: str
     type: str
-    icon: str
+    icon: Optional[str] = None
+    logo_url: Optional[str] = None
     color_hex: str
     playlist_url: str
     requires_pin: bool = False
