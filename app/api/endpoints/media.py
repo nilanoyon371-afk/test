@@ -40,6 +40,14 @@ DUMMY_MEDIA_CONFIG = MediaConfigData(
                     playlist_url="https://premium-iptv.com/api/sports.m3u",
                 ),
                 MediaCategoryResponse(
+                    id="BD",
+                    title="Bangladesh",
+                    type="live",
+                    logo_url="https://upload.wikimedia.org/wikipedia/commons/f/f9/Flag_of_Bangladesh.svg",
+                    color_hex="#4CAF50",
+                    playlist_url="https://raw.githubusercontent.com/imShakil/tvlink/refs/heads/main/iptv.m3u8",
+                ),
+                MediaCategoryResponse(
                     id="adult_18",
                     title="Adult (18+)",
                     type="vod",
@@ -63,14 +71,6 @@ DUMMY_MEDIA_CONFIG = MediaConfigData(
                     icon="public_rounded",
                     color_hex="#00BCD4",
                     playlist_url="https://iptv-org.github.io/iptv/index.m3u",
-                ),
-                MediaCategoryResponse(
-                    id="BD",
-                    title="Bangladesh",
-                    type="live",
-                    logo_url="https://upload.wikimedia.org/wikipedia/commons/f/f9/Flag_of_Bangladesh.svg",
-                    color_hex="#4CAF50",
-                    playlist_url="https://raw.githubusercontent.com/imShakil/tvlink/refs/heads/main/iptv.m3u8",
                 ),
                 MediaCategoryResponse(
                     id="documentaries",
