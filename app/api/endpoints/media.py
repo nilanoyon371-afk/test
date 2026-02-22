@@ -8,6 +8,7 @@ router = APIRouter()
 DUMMY_MEDIA_CONFIG = MediaConfigData(
     title="Media Center",
     description="Choose a provider and category to start watching",
+    parental_pin="1122",
     providers=[
         MediaProviderResponse(
             id="premium_iptv_1",

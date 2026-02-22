@@ -21,6 +21,7 @@ class MediaProviderResponse(BaseModel):
 class MediaConfigData(BaseModel):
     title: str
     description: str
+    parental_pin: str = "1122"
     providers: List[MediaProviderResponse]
 
 class MediaConfigResponse(BaseModel):
