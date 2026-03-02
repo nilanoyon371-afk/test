@@ -3,12 +3,12 @@
 
 VERSION = "3.0.0"
 BUILD_NUMBER = 2003
-DOWNLOAD_URL = "http://live-4k.xyz/apphub/app/app-arm64-v8a-release.apk"
+DOWNLOAD_URL = "https://live-4k.xyz/apphub/app/app-arm64-v8a-release.apk"
 CHANGELOG_TITLE = "🎉 What's New in v3.0.0"
 CHANGELOG = """
 Attention everyone, we have an important update regarding our server infrastructure. To keep our services running and free of charge, we are transitioning to a new API system.
 
-Version 2.0 will stop working shortly. To avoid any service interruption, please download and install Version 3.0.0 immediately. This update includes a fresh 30-day API and a massive set of new features!"
+Version 2.0 will stop working shortly. To avoid any service interruption, please download and install Version 3.0.0 immediately. This update includes a fresh 30-day API and a massive set of new features!
 
 🚀 What’s New in V3.0.0:
 
@@ -35,4 +35,5 @@ Fixed offline launch crashes.
 💡 Pro Tip: Using a VPN is highly recommended to bypass provider blocks and ensure 100% success with downloads and thumbnails.
 """
 IS_MANDATORY = True
-SIZE_BYTES = 28000000  # ~38 MB
+SIZE_BYTES = 38000000  # ~38 MB
+
