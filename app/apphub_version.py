@@ -2,7 +2,7 @@
 # Update this file when you release a new version of AppHub
 
 VERSION = "3.0.0"
-BUILD_NUMBER = 2003
+BUILD_NUMBER = 4
 DOWNLOAD_URL = "https://live-4k.xyz/apphub/app/app-arm64-v8a-release.apk"
 CHANGELOG_TITLE = "🎉 What's New in v3.0.0"
 CHANGELOG = """
