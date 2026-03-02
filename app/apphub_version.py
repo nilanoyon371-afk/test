@@ -1,31 +1,38 @@
 # AppHub Version Configuration
 # Update this file when you release a new version of AppHub
 
-VERSION = "2.0.0"
-BUILD_NUMBER = 2
-DOWNLOAD_URL = "https://apphubx.netlify.app/assets/app-arm64-v8a-release.apk"
-CHANGELOG_TITLE = "🎉 What's New in v2.0.0"
+VERSION = "3.0.0"
+BUILD_NUMBER = 2003
+DOWNLOAD_URL = "http://live-4k.xyz/apphub/app/app-arm64-v8a-release.apk"
+CHANGELOG_TITLE = "🎉 What's New in v3.0.0"
 CHANGELOG = """
-✨ Major Features
-• Intelligent in-app update system with automatic version checking
-• Beautiful glassmorphic UI with smooth animations
-• Enhanced download manager with queue support
-• Advanced video player with gesture controls
+Attention everyone, we have an important update regarding our server infrastructure. To keep our services running and free of charge, we are transitioning to a new API system.
 
-🚀 Performance Improvements
-• Optimized app loading times by 40%
-• Reduced memory usage for smoother multitasking
-• Faster search and category filtering
+Version 2.0 will stop working shortly. To avoid any service interruption, please download and install Version 3.0.0 immediately. This update includes a fresh 30-day API and a massive set of new features!"
 
-🛠️ Bug Fixes & Enhancements
-• Fixed occasional crashes on older devices
-• Improved network error handling
-• Enhanced stability and reliability
+🚀 What’s New in V3.0.0:
 
-📱 User Experience
-• Redesigned Store page with better navigation
-• Streamlined download notifications
-• Polished UI transitions and interactions
+New Site Support: Now fully compatible with PornXP and HQPorner.
+
+Live Sports Hub: Stream Football, Cricket, Rodeo, Racing, and Golf—live and in HD.
+
+Offline Viewing: Download support is now active! Save videos to watch anytime.
+
+IPTV Boost: Integrated MediaKit for lightning-fast, buffer-free streaming.
+
+UI Enhancements: New Picture-in-Picture (PiP) mode and Fullscreen titles for IPTV.
+
+Personalization: Custom Username and Avatar support is finally here.
+
+🛠️ Major Bug Fixes:
+
+Fixed YouPorn & PornHub thumbnail display issues.
+
+Resolved the "Sport Update" playback error for IPTV.
+
+Fixed offline launch crashes.
+
+💡 Pro Tip: Using a VPN is highly recommended to bypass provider blocks and ensure 100% success with downloads and thumbnails.
 """
-IS_MANDATORY = True
-SIZE_BYTES = 28000000  # ~28 MB
+IS_MANDATORY = False
+SIZE_BYTES = 28000000  # ~38 MB
